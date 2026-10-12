@@ -1,0 +1,7 @@
+.beads/dolt/
+.beads/*.lock
+.beads/export-state.json
+.beads/last-touched
+.beads/.local_version
+__pycache__/
+.venv/
