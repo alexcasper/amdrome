@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""amdrome degradation & monitoring prototype (bead amdrome-is5, DESIGN.md §2, §3 + docs/SPEC_MECHANICS.md).
+"""amdrome degradation & monitoring prototype (bead amdrome-96z / amdrome-is5).
 
 Measures outcome variance vs decision sensitivity for DEGRADATION,
-KANBAN MONITORING, and PREVENTIVE MAINTENANCE under fixed compact layout.
+KANBAN MONITORING (SPC CUSUM), and PREVENTIVE MAINTENANCE.
+Includes drift-detection latency measurement across sample budgets (B=4, 8, 16).
 
 Stateless CLI (DESIGN §8): inputs on argv, one JSON object per episode on stdout.
 Pure stdlib — runs on any fleet host with python3, no external dependencies.
 
 Usage:
   proto_degradation.py --policy run_to_failure|periodic_pm|spc_reactive
-                       --seed N --episodes N [--ticks 336]
+                       --seed N --episodes N [--ticks 336] [--sample-budget 4|8|16]
 """
 
 import argparse
@@ -43,6 +44,7 @@ H0_HAZARD = 0.0005      # baseline hazard per tick
 BETA_WEAR = 0.045       # wear-dependent hazard multiplier (Weibull convex)
 GAMMA_EXP = 3.0         # convexity exponent
 PM_DURATION = 12        # ticks required for PM
+DRIFT_ONSET_WEAR = 0.35 # wear threshold defining start of detectable drift
 
 # Hyperpriors (drawn once per episode from scenario generator)
 HYPER = {
@@ -80,7 +82,8 @@ def manhattan(a, b):
 
 class StationNode:
     __slots__ = ("kind", "pos", "job", "remaining", "wear", "state",
-                 "downtime_rem", "last_proc_actual", "cusum", "samples_seen")
+                 "downtime_rem", "last_proc_actual", "cusum", "samples_seen",
+                 "drift_onset_tick", "detected", "last_sampled_tick")
 
     def __init__(self, kind, pos):
         self.kind = kind
@@ -93,6 +96,9 @@ class StationNode:
         self.last_proc_actual = PROC_NOMINAL
         self.cusum = 0.0
         self.samples_seen = 0
+        self.drift_onset_tick = None
+        self.detected = False
+        self.last_sampled_tick = -999
 
 
 class BufferNode:
@@ -106,7 +112,7 @@ class BufferNode:
 
 # ----------------------------------------------------------------- simulation
 
-def run_episode(policy, seed, ticks=TICKS):
+def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
     """One paired episode testing degradation, wear drift, and PM policies."""
     scen = random.Random(gen_seed(seed, "hyper"))
     rng = random.Random(gen_seed(seed, policy, "flow"))
@@ -120,7 +126,6 @@ def run_episode(policy, seed, ticks=TICKS):
     inbuf = BufferNode(ents[0][0], ents[0][1])
     nodes = [inbuf]
     station_map = {}
-    buf_after, buf_before = {}, {}
 
     for k, p in ents[1:]:
         if k == "buffer":
@@ -131,6 +136,8 @@ def run_episode(policy, seed, ticks=TICKS):
             station_map[k] = st
 
     st_nodes = [n for n in nodes if isinstance(n, StationNode)]
+    buf_before = {}
+    buf_after = {}
     for i, n in enumerate(nodes):
         if isinstance(n, StationNode):
             buf_before[n] = nodes[i - 1]
@@ -147,8 +154,14 @@ def run_episode(policy, seed, ticks=TICKS):
     unplanned_downtime = 0
     planned_downtime = 0
     spc_probes_spent = 0
-    shift_probes_remaining = 8
+    shift_probes_remaining = sample_budget
     cycle_times = []
+
+    # Detection latency tracking
+    detection_latencies = []
+    detections_count = 0
+    missed_detections = 0
+    false_alarms = 0
 
     # Policy state tracking
     ticks_since_pm = {s.kind: 0 for s in st_nodes}
@@ -156,7 +169,7 @@ def run_episode(policy, seed, ticks=TICKS):
     for t in range(ticks):
         # Shift rollover every 48 ticks: reset telemetry probe budget
         if t % 48 == 0:
-            shift_probes_remaining = 8
+            shift_probes_remaining = sample_budget
 
         # 1. Job arrivals
         if rng.random() < lam:
@@ -168,6 +181,12 @@ def run_episode(policy, seed, ticks=TICKS):
                 inbuf.queue.append(j)
                 jobs[next_jid] = j
                 next_jid += 1
+
+        # Track drift onset
+        for s in st_nodes:
+            if s.wear >= DRIFT_ONSET_WEAR and s.drift_onset_tick is None:
+                s.drift_onset_tick = t
+                s.detected = False
 
         # 2. Operator / Policy decision phase
         if policy == "run_to_failure":
@@ -181,23 +200,37 @@ def run_episode(policy, seed, ticks=TICKS):
                         s.downtime_rem = PM_DURATION
                         ticks_since_pm[s.kind] = 0
                         pm_count += 1
-        elif policy == "spc_reactive":
-            # Smart monitoring: allocate SPC probes to highest-risk stations
-            for s in st_nodes:
-                if s.kind in ("form", "weld", "cut") and shift_probes_remaining > 0 and s.state == "proc":
+        elif policy.startswith("spc_reactive"):
+            # Sort candidate stations by time since last sample (round-robin / risk prioritization)
+            candidates = [s for s in st_nodes if s.kind in ("form", "weld", "cut") and s.state == "proc"]
+            candidates.sort(key=lambda s: s.last_sampled_tick)
+
+            for s in candidates:
+                if shift_probes_remaining > 0:
                     # probe cycle time with sensor noise
                     meas = s.last_proc_actual + rng.gauss(0, 0.4)
                     spc_probes_spent += 1
                     shift_probes_remaining -= 1
                     s.samples_seen += 1
-                    # CUSUM drift update
+                    s.last_sampled_tick = t
+
+                    # CUSUM drift update: standard score against nominal
                     z = (meas - PROC_NOMINAL * proc_scale) / (PROC_NOMINAL * SIGMA_PROC)
                     s.cusum = max(0.0, s.cusum + z - 0.4)
 
-                    # If significant drift detected and buffer cushion exists, schedule PM
-                    down_buf = buf_after.get(s)
-                    if s.cusum > 3.2 and (down_buf is None or len(down_buf.queue) >= 2):
-                        if s.state == "proc" and s.remaining <= 1:
+                    # Check detection threshold
+                    if s.cusum > 3.2:
+                        if not s.detected:
+                            detections_count += 1
+                            s.detected = True
+                            if s.drift_onset_tick is not None:
+                                detection_latencies.append(t - s.drift_onset_tick)
+                            else:
+                                false_alarms += 1
+
+                        # If buffer cushion exists, schedule PM
+                        down_buf = buf_after.get(s)
+                        if (down_buf is None or len(down_buf.queue) >= 1) and s.state == "proc" and s.remaining <= 1:
                             s.state = "pm"
                             s.downtime_rem = PM_DURATION
                             s.cusum = 0.0
@@ -214,10 +247,13 @@ def run_episode(policy, seed, ticks=TICKS):
 
                 if s.downtime_rem <= 0:
                     if s.state == "pm":
-                        s.wear = max(0.0, s.wear * 0.08)  # 92% wear reduction
+                        s.wear = max(0.0, s.wear * 0.08)  # 92% wear reset
                     elif s.state == "broken":
                         s.wear = 0.15                     # overhaul reset
                     s.state = "idle"
+                    s.drift_onset_tick = None
+                    s.detected = False
+                    s.cusum = 0.0
 
         # 4. Station admission
         for s in st_nodes:
@@ -242,10 +278,12 @@ def run_episode(policy, seed, ticks=TICKS):
                 if rng.random() < hazard:
                     # Breakdown occurs!
                     breakdowns_count += 1
+                    if s.drift_onset_tick is not None and not s.detected:
+                        missed_detections += 1
+
                     s.state = "broken"
                     repair_time = max(16, round(math.exp(rng.gauss(3.1, 0.35))))
                     s.downtime_rem = repair_time
-                    # Ruin current job
                     scrapped_jobs += 1
                     del jobs[s.job["id"]]
                     s.job = None
@@ -265,10 +303,9 @@ def run_episode(policy, seed, ticks=TICKS):
 
                     # Inspection station handling
                     if s.kind == "inspect":
-                        # In this prototype, inspect uses sample mode (20%)
+                        # sample mode (20%)
                         if rng.random() < 0.20:
                             if j["has_defect"] and rng.random() < 0.85:
-                                # Caught defect! Scrap it before pack
                                 scrapped_jobs += 1
                                 del jobs[j["id"]]
                                 s.job = None
@@ -336,8 +373,12 @@ def run_episode(policy, seed, ticks=TICKS):
                   - cost_escapes_total
                   - cost_downtime_total)
 
+    mean_latency = (round(sum(detection_latencies) / len(detection_latencies), 2)
+                    if detection_latencies else None)
+
     return {
         "policy": policy,
+        "sample_budget": sample_budget,
         "seed": seed,
         "ticks": ticks,
         "completed_clean": completed_clean,
@@ -351,22 +392,28 @@ def run_episode(policy, seed, ticks=TICKS):
         "revenue": round(revenue, 2),
         "net_profit": round(net_profit, 2),
         "cycle_mean": round(sum(cycle_times) / len(cycle_times), 2) if cycle_times else None,
+        "detections_count": detections_count,
+        "missed_detections": missed_detections,
+        "false_alarms": false_alarms,
+        "mean_detection_latency": mean_latency,
     }
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--policy", required=True,
-                    choices=["run_to_failure", "periodic_pm", "spc_reactive"])
+    ap.add_argument("--policy", required=True)
+    ap.add_argument("--sample-budget", type=int, default=8,
+                    help="SPC sample budget per 48-tick shift")
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--episodes", type=int, default=1)
     ap.add_argument("--ticks", type=int, default=TICKS)
     args = ap.parse_args()
 
     for e in range(args.episodes):
-        rec = run_episode(args.policy, args.seed + e, args.ticks)
+        rec = run_episode(args.policy, args.seed + e, args.ticks,
+                          sample_budget=args.sample_budget)
         print(json.dumps(rec))
-    print(f"[proto_degradation] {args.policy} x{args.episodes} done",
+    print(f"[proto_degradation] {args.policy} (budget={args.sample_budget}) x{args.episodes} done",
           file=sys.stderr)
 
 

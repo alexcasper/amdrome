@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Paired variance/sensitivity analysis for the degradation-mechanic prototype.
 
-Reads research/data/degradation/{run_to_failure,periodic_pm,spc_reactive}.jsonl
-(paired by seed), reports per-policy outcome stats, paired effect sizes,
-win rates, and episode counts needed for 95% confidence verdicts.
+Reads research/data/degradation/*.jsonl (paired by seed), reports per-policy
+outcome stats, paired effect sizes, win rates, detection latency curves,
+and episode counts needed for 95% confidence verdicts (DESIGN §7 gates 2-3).
 """
 
 import json
@@ -13,8 +13,22 @@ from pathlib import Path
 
 DATA = Path(sys.argv[1] if len(sys.argv) > 1
             else Path(__file__).resolve().parent / "data" / "degradation")
-POLICIES = ["run_to_failure", "periodic_pm", "spc_reactive"]
-METRICS = ["net_profit", "unplanned_downtime", "breakdowns_count", "completed_clean"]
+POLICIES = [
+    "run_to_failure",
+    "periodic_pm",
+    "spc_reactive_b4",
+    "spc_reactive_b8",
+    "spc_reactive_b16",
+]
+METRICS = [
+    "net_profit",
+    "unplanned_downtime",
+    "breakdowns_count",
+    "completed_clean",
+    "mean_detection_latency",
+    "missed_detections",
+    "pm_count",
+]
 
 
 def load(policy):
@@ -30,14 +44,16 @@ def load(policy):
 
 
 def mean(xs):
-    return sum(xs) / len(xs) if xs else 0.0
+    valid = [x for x in xs if x is not None]
+    return sum(valid) / len(valid) if valid else 0.0
 
 
 def stdev(xs):
-    if len(xs) < 2:
+    valid = [x for x in xs if x is not None]
+    if len(valid) < 2:
         return 0.0
-    m = mean(xs)
-    return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1))
+    m = mean(valid)
+    return math.sqrt(sum((x - m) ** 2 for x in valid) / (len(valid) - 1))
 
 
 def tinv975(df):
@@ -56,28 +72,37 @@ def main():
     n = len(seeds)
     print(f"Paired seeds: {n}\n")
 
-    print(f"{'Metric':<20}" + "".join(f"{p:>24}" for p in valid_policies))
-    print(f"{'':<20}" + "".join(f"{'mean ± sd (min,max)':>24}" for _ in valid_policies))
+    # Table 1: Per-policy summary
+    print(f"{'Metric':<24}" + "".join(f"{p:>20}" for p in valid_policies))
+    print(f"{'':<24}" + "".join(f"{'mean ± sd (min,max)':>20}" for _ in valid_policies))
     for m in METRICS:
-        row = f"{m:<20}"
+        row = f"{m:<24}"
         for p in valid_policies:
             xs = [data[p][s][m] for s in seeds if data[p][s][m] is not None]
             if xs:
-                row += f"{mean(xs):>12.2f} ±{stdev(xs):<5.2f}({min(xs):.0f},{max(xs):.0f})"
+                row += f"{mean(xs):>10.1f} ±{stdev(xs):<4.1f}({min(xs):.0f},{max(xs):.0f})"
             else:
-                row += f"{'N/A':>24}"
+                row += f"{'N/A':>20}"
         print(row)
 
-    print(f"\n{'Comparison':<32}{'Metric':<20}{'Δmean':>8}{'sd(Δ)':>8}"
+    # Table 2: Paired Comparisons against Run-to-Failure baseline
+    print(f"\n{'Comparison vs Baseline':<32}{'Metric':<20}{'Δmean':>8}{'sd(Δ)':>8}"
           f"{'95% CI':>20}{'win%':>7}{'d_z':>7}{'n95':>7}")
-    pairs = [("spc_reactive", "run_to_failure"),
-             ("periodic_pm", "run_to_failure"),
-             ("spc_reactive", "periodic_pm")]
+    
+    comparisons = [
+        ("spc_reactive_b16", "run_to_failure"),
+        ("spc_reactive_b8", "run_to_failure"),
+        ("spc_reactive_b4", "run_to_failure"),
+        ("spc_reactive_b8", "periodic_pm"),
+        ("periodic_pm", "run_to_failure"),
+    ]
 
-    for a, b in pairs:
+    eval_metrics = ["net_profit", "unplanned_downtime", "breakdowns_count", "completed_clean"]
+
+    for a, b in comparisons:
         if a not in valid_policies or b not in valid_policies:
             continue
-        for m in METRICS:
+        for m in eval_metrics:
             diffs = [data[a][s][m] - data[b][s][m] for s in seeds
                      if data[a][s][m] is not None and data[b][s][m] is not None]
             if not diffs:
@@ -91,8 +116,33 @@ def main():
             wins = (sum(1 for d in diffs if d > 0) if better_positive else sum(1 for d in diffs if d < 0)) / len(diffs) * 100
             dz = dm / ds if ds > 1e-9 else float("inf")
             n95 = math.ceil((1.96 * ds / abs(dm)) ** 2) if abs(dm) > 1e-9 and ds > 0 else 1
-            print(f"{a+' vs '+b:<32}{m:<20}{dm:>8.2f}{ds:>8.2f}"
+            print(f"{a+' vs '+b:<32}{m:<20}{dm:>8.1f}{ds:>8.1f}"
                   f"  [{ci[0]:7.1f},{ci[1]:7.1f}]{wins:>6.1f}{dz:>7.2f}{n95:>7}")
+
+    # Table 3: Detection Latency vs Monitoring Budget Curve
+    print("\nCUSUM Drift Detection Latency vs Sample Budget Curve:")
+    print(f"{'Budget (probes/shift)':<24}{'Mean Latency (ticks)':<24}{'Missed Detections / Ep':<24}{'Net Profit ($)':<20}")
+    for b_str in ["spc_reactive_b4", "spc_reactive_b8", "spc_reactive_b16"]:
+        if b_str in valid_policies:
+            latencies = [data[b_str][s]["mean_detection_latency"] for s in seeds if data[b_str][s]["mean_detection_latency"] is not None]
+            missed = [data[b_str][s]["missed_detections"] for s in seeds]
+            profit = [data[b_str][s]["net_profit"] for s in seeds]
+            b_val = b_str.split("_b")[-1]
+            print(f"  B = {b_val:<20} {mean(latencies):>8.1f} ± {stdev(latencies):<6.1f} {mean(missed):>12.2f} {mean(profit):>18.1f}")
+
+    # Table 4: Variance Decomposition on Net Profit (Skill vs Scenario vs Residual)
+    print("\nNet Profit Variance Decomposition (3-way: Policy x Scenario Seed):")
+    core_pols = ["spc_reactive_b8", "run_to_failure", "periodic_pm"]
+    if all(p in valid_policies for p in core_pols):
+        m = "net_profit"
+        grand = mean([data[p][s][m] for p in core_pols for s in seeds])
+        ss_policy = len(seeds) * sum((mean([data[p][s][m] for s in seeds]) - grand) ** 2 for p in core_pols)
+        ss_seed = sum((mean([data[p][s][m] for p in core_pols]) - grand) ** 2 for s in seeds) * len(core_pols)
+        ss_res = sum((data[p][s][m] - grand) ** 2 for p in core_pols for s in seeds) - ss_policy - ss_seed
+        tot = ss_policy + ss_seed + ss_res
+        print(f"  Policy (Skill):   {ss_policy / tot:6.1%}")
+        print(f"  Seed (Scenario):  {ss_seed / tot:6.1%}")
+        print(f"  Residual (Noise): {ss_res / tot:6.1%}")
 
 
 if __name__ == "__main__":

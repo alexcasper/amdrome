@@ -128,6 +128,23 @@ See `research/2026-10-13-layout-variance.md`. Headlines:
   to throughput; score-weighting achieves the same skill surface cheaper.
 - Runtime: ~0.6 ms/episode on dusk → league match well under budget (gate 4).
 
+### Measured findings (degradation & monitoring mechanic, 2026-10-13, sweeps on t3)
+
+See `research/2026-10-13-degradation-variance.md`. Bead: amdrome-96z. Headlines:
+
+- **Detection-latency vs monitoring budget curve (Sterman information delay):**
+  $B=4 \to 8 \to 16$ probes/shift compresses mean CUSUM drift detection latency from
+  $32.2 \pm 23.5 \to 25.6 \pm 16.3 \to 22.2 \pm 14.4$ ticks ($-31\%$), and cuts
+  missed breakdowns from $0.45 \to 0.24$ per episode ($-47\%$).
+- **Downtime reduction:** Reactive SPC maintenance with $B=16$ cuts unplanned downtime
+  by $-9.3$ ticks ($31.1$ vs $40.3$, $d_z = -0.22, N95 = 77$) and breakdowns by $-28\%$ ($d_z = -0.27$).
+- **Targeted PM vs blind periodic PM:** Reactive SPC PM outperforms fixed periodic PM
+  by $+\$470.9$ net profit ($55.2\%$ win rate, $d_z = +0.13, N95 = 246$) because it targets
+  interventions only when CUSUM confirms true wear ($0.2$ PMs/ep vs $5.9$ blind PMs).
+- **Default telemetry budget:** Set to $B = 8$ probes/shift for v1.0.
+- **Runtime budget (gate 4):** 2,000 paired episodes executed in $<6.0$ s on fleet host
+  `t3` (~0.7 ms/episode/336 ticks). Dawn compute constraint strictly respected.
+
 ## 7. Acceptance gates (before API freeze)
 
 1. **Seed determinism**: same seed ⇒ identical state hash at every tick.
