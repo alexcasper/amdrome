@@ -5,6 +5,14 @@ workbench: mechanics spec, RNG inventory, API sketch, portability plan. It is
 *frozen* only when the anti-tape and skill-dominance tests pass (see
 "Acceptance gates").
 
+> **Comprehensive Specification Suite:**  
+> The comprehensive architectural plan and formal specifications building on this draft are available in:  
+> - [docs/COMPREHENSIVE_PLAN.md](file:///mnt/d/ops/amdrome/docs/COMPREHENSIVE_PLAN.md) — Master System Blueprint & Lessons from Kaggriculture  
+> - [docs/SPEC_MECHANICS.md](file:///mnt/d/ops/amdrome/docs/SPEC_MECHANICS.md) — Formal Mathematical Mechanics & 2-Tier RNG Inventory  
+> - [docs/SPEC_API_ENV.md](file:///mnt/d/ops/amdrome/docs/SPEC_API_ENV.md) — `kaggle_environments` Schema & Gymnasium / PettingZoo Dual API  
+> - [docs/SPEC_DEMO_PRODUCT.md](file:///mnt/d/ops/amdrome/docs/SPEC_DEMO_PRODUCT.md) — Operator Assistant Architecture, CUSUM Drift & A/B Benchmark  
+> - [docs/ROADMAP_AND_BEADS.md](file:///mnt/d/ops/amdrome/docs/ROADMAP_AND_BEADS.md) — Phased Roadmap, Beads Breakdown & Fleet Protocol  
+
 Sterman's *Business Dynamics* (RESEARCH/, OCR in flight) is the theory base
 for the stock/flow structure: WIP buffers are stocks, production/defect rates
 are flows, the kanban layer is the information-feedback path with its own
