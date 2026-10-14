@@ -80,9 +80,9 @@ class TestDeterminism(unittest.TestCase):
 
 
 class TestGoldenState(unittest.TestCase):
-    # Pinned 2026-10-13 (v2: spot sales added — deliberate break/update);
+    # Pinned 2026-10-13 (v3: PM-reservation mechanic — deliberate update);
     # any change to engine mechanics MUST update this deliberately.
-    GOLDEN_SEED_42 = "cd489b393d1db213741402e63c225bdf75511fbc0599cc09367e627ee2813737"
+    GOLDEN_SEED_42 = "cc3e146aa2a3affe486e443900ce19cd8f65ab4cfffa02ee51702f48d5d026ec"
 
     def test_golden_hash_stable(self):
         e = run_engine(42)

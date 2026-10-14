@@ -7,8 +7,9 @@ wear-rate hyperprior is wide.
 
 import math
 
-H0_HAZARD = 0.0005
-BETA_WEAR = 0.15       # cliff multiplier
+H0_HAZARD = 0.0001      # rare acts of god (was 0.0005: ~0.9 unpreventable
+                        # breakdowns/ep capped policy d_z ~0.3)
+BETA_WEAR = 0.30        # cliff multiplier (wear-driven hazard dominates)
 GAMMA_EXP = 6.0
 PM_DURATION = 8        # ticks
 PM_COST = 250.0

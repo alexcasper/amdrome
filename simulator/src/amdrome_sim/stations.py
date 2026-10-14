@@ -21,7 +21,7 @@ class Buffer:
 class Station:
     __slots__ = ("kind", "pos", "job", "remaining", "wear", "state",
                  "downtime_rem", "last_proc_actual", "ops_done",
-                 "pm_schedule_tick")
+                 "pm_schedule_tick", "pm_requested")
 
     def __init__(self, kind, pos):
         self.kind = kind
@@ -34,6 +34,7 @@ class Station:
         self.last_proc_actual = PROC_NOMINAL
         self.ops_done = 0
         self.pm_schedule_tick = None
+        self.pm_requested = False
 
     def proc_time(self, proc_scale, wear_rate_unused, rng):
         import math

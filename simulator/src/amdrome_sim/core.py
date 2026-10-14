@@ -185,11 +185,11 @@ class Engine:
                                 self.probe_rng)
         for kind in actions.get("pm", []):
             s = self._station(kind)
-            if (s is not None and s.state == "idle" and s.job is None
-                    and s.downtime_rem <= 0):
-                degradation.start_pm(s)
-                self.pm_count += 1
-                self.pm_cost += degradation.PM_COST
+            if (s is not None and s.state not in ("pm", "broken")
+                    and not s.pm_requested):
+                # reserve the station for PM at its next op completion
+                # (planned-maintenance window; see admission step)
+                s.pm_requested = True
 
         # 6. arrivals
         if self.rng.random() < self.h["lam"]:
@@ -225,10 +225,16 @@ class Engine:
                         degradation.complete_repair(s)
                     s.job = None
 
-        # 9. station admission
+        # 9. station admission (reserved PM takes the station first)
         staffing = self.roster.staffing_multiplier()
         for s in self.line.stations:
             if s.state == "idle" and s.job is None:
+                if s.pm_requested:
+                    s.pm_requested = False
+                    degradation.start_pm(s)
+                    self.pm_count += 1
+                    self.pm_cost += degradation.PM_COST
+                    continue
                 up = self.line.buf_before[s]
                 if up.queue:
                     j = up.queue.pop(0)
@@ -249,6 +255,7 @@ class Engine:
                 self.breakdown_cost += degradation.BREAKDOWN_COST
                 s.state = "broken"
                 s.downtime_rem = repair
+                s.pm_requested = False   # repair supersedes the PM request
                 if s.job is not None:
                     self.scrapped += 1
                     self.scrap_cost += quality.SCRAP_COST
