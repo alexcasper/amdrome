@@ -41,12 +41,14 @@ class NullAgent:
 
 class Engine:
     def __init__(self, seed, agent=None, layout="compact", ticks=TICKS,
-                 shared_flow=True):
+                 shared_flow=True, rival_mu=None):
         self.seed = seed
         self.agent = agent or NullAgent()
         self.ticks = ticks
         self.bank = RngBank(seed, policy=layout, shared_flow=shared_flow)
         self.h = draw_hyperprior(self.bank.hyper)
+        if rival_mu is not None:      # opponent-pool draw (league play)
+            self.h["rival_bid_mu"] = rival_mu
         self.rng = self.bank.flow
         self.agent_rng = self.bank.agents
         self.probe_rng = random.Random(
