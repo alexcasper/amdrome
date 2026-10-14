@@ -91,6 +91,7 @@ class Engine:
         self.breakdown_cost = 0.0
         self.scrap_cost = 0.0
         self.contract_money = 0.0
+        self.spot_units = 0
         self.delivered = []            # (tick, clean?, contract_id)
         self.drift_onset = {}
 
@@ -374,6 +375,12 @@ class Engine:
                 else:
                     v["filled_clean"] += 1
                 return
+        # no unfulfilled contract: sell on the spot market
+        if ev["defect"]:
+            self.contract_money -= market.SPOT_DEFECT_PENALTY
+        else:
+            self.contract_money += market.SPOT_SELL_FRAC * self.spot.p
+        self.spot_units += 1
 
     def _settle(self, cid, t):
         v = self.won.pop(cid)
@@ -406,6 +413,7 @@ class Engine:
             "rejected": self.rejected,
             "unplanned_downtime": self.unplanned_downtime,
             "contracts_won": len(self.settled),
+            "spot_units": self.spot_units,
             "ontime_frac": round(ontime, 3),
             "defect_ppm": round(ppm, 1),
             "downtime_frac": round(self.unplanned_downtime / self.ticks, 3),

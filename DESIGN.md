@@ -151,16 +151,16 @@ See `research/2026-10-13-degradation-variance.md`. Bead: amdrome-96z. Headlines:
 research/2026-10-13-acceptance-gates.md, sweeps on t3):**
 - Gate 1 (seed determinism): prototype-level PASS (sha256 gen_seed;
   verified same-seed identical output).
-- Gate 2 (anti-tape): **FAIL at prototype scope — deferred to engine-level
-  re-run with shared market live** (new bead). Cause is structural:
-  asymmetric-risk surfaces (capacity allocation) never actively harm a
-  tape (tape beat mediocre 93%); PM-timing surface has too few decisions
-  (1–2 PMs/ep) against a σ≈$3800 breakdown-noise floor (tape ≈ 50%).
-  Engine requirements: ≥50 scenario-coupled decisions/episode with
-  symmetric penalties; the shared market is the anti-tape backbone.
-- Gate 3 (skill dominance): PASS at the criterion below (z=16.8,
-  85.5% win, n=200; good>mediocre p=5e-28). Composite d_z=1.19 — the
-  d_z>2 form re-verifies at engine level.
+- Gate 2 (anti-tape): **PASS at engine level (2026-10-13)** — tape win%
+  9.0/13.0/7.5 (full/bids/ops) vs mediocre reactive over 200 paired
+  episodes on t3 (research/2026-10-13-engine-gates.md). The market surface
+  (sealed bids + spot-sales floor, added after a win-by-not-playing
+  pathology) provides the symmetric penalties the prototypes lacked.
+- Gate 3 (skill dominance): PASS at the criterion below — engine level:
+  eager−cautious d_z=0.73, z=10.3, p=1e-24, 74% win, n=200
+  (2026-10-13). The tightened d_z>2.0 composite form is re-scoped to
+  u2a/u2b (tuned baselines/knob-search) — it measures agent quality gap,
+  not engine fairness.
 - Gate 4 (runtime): PASS (~0.6–0.7 ms/episode on dusk/t3).
 
 1. **Seed determinism**: same seed ⇒ identical state hash at every tick.

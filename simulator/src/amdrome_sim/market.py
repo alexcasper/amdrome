@@ -9,6 +9,8 @@ import math
 
 LATE_PENALTY_PER_TICK = 15.0
 BID_WINDOW = 8           # ticks a contract stays open for bids
+SPOT_SELL_FRAC = 0.75     # uncontracted units sell on the spot market
+SPOT_DEFECT_PENALTY = 400.0
 
 
 class SpotMarket:

@@ -29,7 +29,7 @@ def act(obs):
             out["probes"].append(kind)
 
     for kind, c in obs["cusum"].items():
-        if c > 1.8:
+        if c > 3.0:                      # drift alarm level, not noise
             out["pm"].append(kind)
 
     if obs["t"] % 48 == 0 and obs["t"] > 0:
