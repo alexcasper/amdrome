@@ -147,6 +147,22 @@ See `research/2026-10-13-degradation-variance.md`. Bead: amdrome-96z. Headlines:
 
 ## 7. Acceptance gates (before API freeze)
 
+**Measured status (2026-10-13, prototype scope — see
+research/2026-10-13-acceptance-gates.md, sweeps on t3):**
+- Gate 1 (seed determinism): prototype-level PASS (sha256 gen_seed;
+  verified same-seed identical output).
+- Gate 2 (anti-tape): **FAIL at prototype scope — deferred to engine-level
+  re-run with shared market live** (new bead). Cause is structural:
+  asymmetric-risk surfaces (capacity allocation) never actively harm a
+  tape (tape beat mediocre 93%); PM-timing surface has too few decisions
+  (1–2 PMs/ep) against a σ≈$3800 breakdown-noise floor (tape ≈ 50%).
+  Engine requirements: ≥50 scenario-coupled decisions/episode with
+  symmetric penalties; the shared market is the anti-tape backbone.
+- Gate 3 (skill dominance): PASS at the criterion below (z=16.8,
+  85.5% win, n=200; good>mediocre p=5e-28). Composite d_z=1.19 — the
+  d_z>2 form re-verifies at engine level.
+- Gate 4 (runtime): PASS (~0.6–0.7 ms/episode on dusk/t3).
+
 1. **Seed determinism**: same seed ⇒ identical state hash at every tick.
 2. **Anti-tape**: an agent that replays a recorded action tape from a
    strong-policy episode under a *different* hyperprior draw loses to a

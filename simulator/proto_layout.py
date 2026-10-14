@@ -30,6 +30,7 @@ SIGMA_PROC = 0.15       # lognormal cycle-time noise
 DRIFT_SLOPE = 0.004     # cycle-time inflation per unit of wear
 WEAR_PER_OP = 0.01      # (unused placeholder; wear_rate drawn per episode)
 TICKS = 336             # one production week (7 shifts x 48)
+REALLOC_TICK = 48       # end of shift 1: buffer-capacity reallocation point
 
 # hyperprior ranges — drawn once per episode from the *scenario* generator
 # (DESIGN §6: the primary anti-tape lever)
@@ -116,16 +117,25 @@ class Node:
         self.wear = 0.0
 
 
-def run_episode(policy, seed, ticks=TICKS, lam_range=None):
+def run_episode(policy, seed, ticks=TICKS, lam_range=None, decide=None,
+                shared_flow=False):
     """One episode. Three generators (DESIGN §6):
     - scenario hyperprior: shared across policies for a given seed (paired)
     - layout: policy-specific (scattered placement varies)
     - flow: per (seed, policy) episode randomness
+
+    `decide(t, arr_observed) -> caps` is an optional deterministic agent
+    hook called at t=0 and t=REALLOC_TICK; caps = 6 buffer capacities
+    [inbuf, b1..b5]. Used by proto_gates (anti-tape harness). Default path
+    is bit-identical to the original prototype.
     """
     lam_lo, lam_hi = lam_range or HYPER["lam"]
     scen = random.Random(gen_seed(seed, "hyper"))
     lay = random.Random(gen_seed(seed, policy, "layout"))
-    rng = random.Random(gen_seed(seed, policy, "flow"))
+    if shared_flow:
+        rng = random.Random(gen_seed(seed, "flow"))
+    else:
+        rng = random.Random(gen_seed(seed, policy, "flow"))
 
     lam = scen.uniform(lam_lo, lam_hi)
     proc_scale = scen.uniform(*HYPER["proc_scale"])
@@ -148,11 +158,26 @@ def run_episode(policy, seed, ticks=TICKS, lam_range=None):
     completed, cycle_times, wip_sum, rejected = 0, [], 0, 0
     transport_ticks = 0
     blocked_ticks = 0
+    caps = [BUFFER_CAP] * 6     # [inbuf, b1..b5]
+    arr_observed = 0
+    arr_first48 = 0
+    if decide:
+        caps = list(decide(0, 0))
+    # buffer node -> caps index (inbuf=0, inter-station buffers 1..5)
+    buf_idx = {id(nodes[0]): 0}
+    for i, n in enumerate(nodes):
+        if n.kind == "buffer":
+            buf_idx[id(n)] = i // 2
 
     for t in range(ticks):
+        if t % REALLOC_TICK == 0 and t > 0:
+            arr_first48 = arr_observed
+            if decide:
+                caps = list(decide(t, arr_observed))
         # arrivals (Poisson thinning)
         if rng.random() < lam:
-            if len(inbuf.queue) < BUFFER_CAP:
+            arr_observed += 1
+            if len(inbuf.queue) < caps[0]:
                 j = {"id": next_jid, "state": "wait", "dest": inbuf,
                      "born": t}
                 inbuf.queue.append(j)
@@ -187,7 +212,7 @@ def run_episode(policy, seed, ticks=TICKS, lam_range=None):
                         s.job = None
                     else:
                         down = buf_after[s]
-                        if len(down.queue) < BUFFER_CAP:
+                        if len(down.queue) < caps[buf_idx[id(down)]]:
                             dist = manhattan(s.pos, down.pos)
                             tt = max(1, round(dist * T_UNIT *
                                       (1 + rng.uniform(-t_noise, t_noise))))
@@ -222,6 +247,7 @@ def run_episode(policy, seed, ticks=TICKS, lam_range=None):
                        if cycle_times else None),
         "wip_mean": round(wip_sum / ticks, 3),
         "blocked_ticks": blocked_ticks,
+        "arr_first48": arr_first48 if REALLOC_TICK <= ticks else None,
         "wear_final": wear_final,
     }
 

@@ -41,16 +41,16 @@ DOWNTIME_COST_TICK = 5.0# line idling cost per tick of unplanned downtime
 
 # Failure & Wear Physics
 H0_HAZARD = 0.0005      # baseline hazard per tick
-BETA_WEAR = 0.045       # wear-dependent hazard multiplier (Weibull convex)
-GAMMA_EXP = 3.0         # convexity exponent
-PM_DURATION = 12        # ticks required for PM
+BETA_WEAR = 0.15       # wear-dependent hazard multiplier (Weibull convex)
+GAMMA_EXP = 6.0         # convexity exponent (steep cliff above drift window)
+PM_DURATION = 8         # ticks required for PM
 DRIFT_ONSET_WEAR = 0.35 # wear threshold defining start of detectable drift
 
 # Hyperpriors (drawn once per episode from scenario generator)
 HYPER = {
     "lam": (0.08, 0.14),        # arrival rate (near saturation)
     "proc_scale": (0.85, 1.15), # episode processing speed
-    "wear_rate": (0.008, 0.020),# wear accumulated per finished job
+    "wear_rate": (0.006, 0.030),# wear per finished job (5x spread: PM timing pivotal)
     "p_defect_base": (0.005, 0.020),
 }
 
@@ -112,7 +112,7 @@ class BufferNode:
 
 # ----------------------------------------------------------------- simulation
 
-def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
+def run_episode(policy, seed, ticks=TICKS, sample_budget=8, pm_schedule=None):
     """One paired episode testing degradation, wear drift, and PM policies."""
     scen = random.Random(gen_seed(seed, "hyper"))
     rng = random.Random(gen_seed(seed, policy, "flow"))
@@ -165,6 +165,11 @@ def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
 
     # Policy state tracking
     ticks_since_pm = {s.kind: 0 for s in st_nodes}
+    pm_events = []          # [(tick, station_kind)] — tape recording surface
+    tape_by_tick = {}
+    if pm_schedule:
+        for tt, kind_s in pm_schedule:
+            tape_by_tick.setdefault(tt, []).append(kind_s)
 
     for t in range(ticks):
         # Shift rollover every 48 ticks: reset telemetry probe budget
@@ -191,6 +196,17 @@ def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
         # 2. Operator / Policy decision phase
         if policy == "run_to_failure":
             pass  # never schedules PM; only fixes hard breakdowns
+        elif policy == "tape_pm":
+            # Anti-tape agent: replay S0's recorded PM schedule verbatim.
+            for kind_s in tape_by_tick.get(t, []):
+                s = station_map.get(kind_s)
+                if (s is not None and s.state == "idle" and s.job is None
+                        and s.downtime_rem <= 0):
+                    s.state = "pm"
+                    s.downtime_rem = PM_DURATION
+                    s.cusum = 0.0
+                    pm_count += 1
+                    pm_events.append((t, kind_s))
         elif policy == "periodic_pm":
             for s in st_nodes:
                 if s.kind in ("form", "weld") and s.state in ("idle", "proc") and s.downtime_rem <= 0:
@@ -200,6 +216,7 @@ def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
                         s.downtime_rem = PM_DURATION
                         ticks_since_pm[s.kind] = 0
                         pm_count += 1
+                        pm_events.append((t, s.kind))
         elif policy.startswith("spc_reactive"):
             # Sort candidate stations by time since last sample (round-robin / risk prioritization)
             candidates = [s for s in st_nodes if s.kind in ("form", "weld", "cut") and s.state == "proc"]
@@ -228,13 +245,28 @@ def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
                             else:
                                 false_alarms += 1
 
-                        # If buffer cushion exists, schedule PM
+                        # If cushion or idle, schedule PM (detected drift)
                         down_buf = buf_after.get(s)
-                        if (down_buf is None or len(down_buf.queue) >= 1) and s.state == "proc" and s.remaining <= 1:
+                        can_pm = (s.state == "proc" and s.remaining <= 1
+                                  and (down_buf is None
+                                       or len(down_buf.queue) >= 1))
+                        if can_pm or s.state == "idle":
+                            if s.job is not None:
+                                # finish the op cleanly, release job, then PM
+                                j = s.job
+                                s.job = None
+                                if down_buf is not None \
+                                        and len(down_buf.queue) < BUFFER_CAP:
+                                    dist = manhattan(s.pos, down_buf.pos)
+                                    tt = max(1, round(dist * T_UNIT))
+                                    j["state"] = "transit"
+                                    j["dest"] = down_buf
+                                    j["travel"] = tt
                             s.state = "pm"
                             s.downtime_rem = PM_DURATION
                             s.cusum = 0.0
                             pm_count += 1
+                            pm_events.append((t, s.kind))
 
         # 3. Station maintenance & breakdown recovery
         for s in st_nodes:
@@ -396,6 +428,7 @@ def run_episode(policy, seed, ticks=TICKS, sample_budget=8):
         "missed_detections": missed_detections,
         "false_alarms": false_alarms,
         "mean_detection_latency": mean_latency,
+        "pm_events": pm_events,
     }
 
 
