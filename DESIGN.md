@@ -156,12 +156,13 @@ research/2026-10-13-acceptance-gates.md, sweeps on t3):**
   episodes on t3 (research/2026-10-13-engine-gates.md). The market surface
   (sealed bids + spot-sales floor, added after a win-by-not-playing
   pathology) provides the symmetric penalties the prototypes lacked.
-- Gate 3 (skill dominance): **PASS — calibrated 2026-10-14**: reactive vs
-  blind edge +2312, episode d_z 0.82 (p=2e-31, 79% win, n=200);
-  **match-level (mean of 5 episodes) d_z = 2.24, 100% win, p=1e-45**.
-  Match-level scoring is the recommended verdict unit. Calibration details:
-  research/2026-10-14-sim-calibration.md (PM cost 80, hot wear hyperprior,
-  station-asymmetric wear multipliers).
+- Gate 3 (skill dominance): **PASS — calibrated 2026-10-14, re-measured
+  after the procurement + labour surfaces**: reactive vs blind edge
+  +$2032/ep, episode d_z 0.77 (p=2e-27, 77% win, n=200); match-level
+  (mean of 5) d_z 1.62, 92.5% win, p=2e-24. The tighter the decision
+  surface, the more paired noise — verdict confidence stays extreme
+  (z≈10) and match-level scoring (≥5 episodes) remains the recommended
+  verdict unit. Calibration history: research/2026-10-14-sim-calibration.md.
 - Gate 4 (runtime): PASS (~0.6–0.7 ms/episode on dusk/t3).
 
 1. **Seed determinism**: same seed ⇒ identical state hash at every tick.

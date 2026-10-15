@@ -15,8 +15,8 @@ def defect_prob(wear, p_defect_base, skill=1.0):
     return base * (1.0 - SKILL_COEFF * (1.0 - skill))
 
 
-def inject(job, station, p_defect_base, rng):
-    if rng.random() < defect_prob(station.wear, p_defect_base):
+def inject(job, station, p_defect_base, rng, skill=1.0):
+    if rng.random() < defect_prob(station.wear, p_defect_base, skill):
         job["has_defect"] = True
 
 

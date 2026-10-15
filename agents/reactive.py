@@ -58,11 +58,39 @@ class Agent:
                 # station serviced: our wear proxy resets with its wear
                 self.cum_cusum[kind] = 0.0
 
+    def _assignment(self, obs, out):
+        """Match specialists to their affinity stations each shift."""
+        roster = obs.get("roster") or {}
+        workers = roster.get("workers")
+        if not workers:
+            return
+        present = [w for w in workers if not w["absent"]]
+        counts = {}
+        # one specialist per affinity station first (highest skill wins)
+        by_aff = {}
+        for w in present:
+            by_aff.setdefault(w["affinity"], []).append(w)
+        for aff, ws in by_aff.items():
+            ws.sort(key=lambda w: -w["skill"])
+            counts[aff] = min(len(ws), 1)
+        # remaining workers: fill largest stations (double-staffing bonus)
+        left = len(present) - sum(counts.values())
+        kinds = sorted(obs["cards"], key=lambda k: -counts.get(k, 0))
+        i = 0
+        while left > 0:
+            counts[kinds[i % len(kinds)]] = counts.get(kinds[i % len(kinds)],
+                                                       0) + 1
+            left -= 1
+            i += 1
+        out["assign"] = counts
+
     def act(self, obs):
         k = self.k
         self._update_cum_cusum(obs)
         out = {"bids": {}, "probes": [], "pm": []}
         self._procurement(obs, out)
+        if obs["t"] % 48 == 0 and obs["t"] > 0:
+            self._assignment(obs, out)
         spot = obs["spot_price"]
         for c in obs["open_contracts"]:
             margin = c["unit_price"] - spot

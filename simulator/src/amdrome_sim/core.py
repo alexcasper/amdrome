@@ -71,7 +71,8 @@ class Engine:
         self.wear_mult = {s.kind: self.bank.hyper.uniform(0.5, 1.8)
                           for s in self.line.stations}
 
-        self.roster = labour.Roster(self.bank.layout)
+        self.roster = labour.Roster(self.bank.layout,
+                                    station_types=floor.STATION_TYPES)
         self.spot = market.SpotMarket(self.h["spot_p0"], self.h["spot_sigma"],
                                       self.h["spot_jump"], self.rng)
         self.view = kanban_mod.KanbanView(self.line, self.h["proc_scale"])
@@ -175,7 +176,8 @@ class Engine:
         # 4. agent decision (the ONLY information channel: kanban obs)
         obs = self.view.observe(t, self.line, self._wip(), self.spot.p,
                                 self.open_contracts, self.results_log,
-                                input_stock=self.input_stock)
+                                input_stock=self.input_stock,
+                                roster_card=self.roster.card())
         self.results_log = []
         actions = self.agent.act(obs) or {}
         self.actions_taken += sum(len(v) if isinstance(v, (list, dict))
@@ -198,6 +200,10 @@ class Engine:
                 self.input_cost += n * self.spot.p
                 self.input_bought += n
                 self.input_stock += n
+        # labour: re-assign present workers to stations (any tick; binds
+        # to every station admission from the next tick on)
+        if isinstance(actions.get("assign"), dict):
+            self.roster.apply_assignment(actions["assign"])
         for kind in actions.get("probes", [])[:kanban_mod.SPC_BUDGET]:
             s = self._station(kind)
             if s is not None and s.state == "proc":
@@ -249,7 +255,6 @@ class Engine:
                     s.job = None
 
         # 9. station admission (reserved PM takes the station first)
-        staffing = self.roster.staffing_multiplier()
         for s in self.line.stations:
             if s.state == "idle" and s.job is None:
                 if s.pm_requested:
@@ -263,6 +268,7 @@ class Engine:
                     j = up.queue.pop(0)
                     s.job = j
                     s.state = "proc"
+                    staffing = self.roster.staffing_multiplier(s.kind)
                     s.remaining = max(1, round(
                         s.proc_time(self.h["proc_scale"], 0, self.rng)
                         / staffing))
@@ -292,7 +298,8 @@ class Engine:
             degradation.apply_wear(s, self.h["wear_rate"]
                                    * self.wear_mult[s.kind])
             if s.kind in ("cut", "form", "weld", "paint"):
-                quality.inject(j, s, self.h["p_defect_base"], self.rng)
+                quality.inject(j, s, self.h["p_defect_base"], self.rng,
+                               skill=self.roster.effective_skill(s.kind))
             self._release(s, j, t, results)
 
         # 11. transit arrivals

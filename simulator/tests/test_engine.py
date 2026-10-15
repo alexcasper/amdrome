@@ -80,9 +80,9 @@ class TestDeterminism(unittest.TestCase):
 
 
 class TestGoldenState(unittest.TestCase):
-    # Pinned 2026-10-14 (v5: station-asymmetric wear multipliers 0.5–1.8 —
-    # makes kanban monitoring economically necessary); deliberate update.
-    GOLDEN_SEED_42 = "f7ae757d7ac6e4f753228328bd50a845fd801edf26867d728ff4af4cbe845371"
+    # Pinned 2026-10-14 (v6: labour surface — per-station affinities,
+    # assignment action, skill-coupled defects); deliberate update.
+    GOLDEN_SEED_42 = "bbd090ea123f84511a10e4e619f252e1e94804aaf171fff7cd2b256404bfb82e"
 
     def test_golden_hash_stable(self):
         e = run_engine(42)
