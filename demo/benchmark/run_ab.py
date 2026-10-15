@@ -111,9 +111,10 @@ def main():
     for name, d in metrics.items():
         lo, hi = bootstrap_ci(d)
         mean = sum(d) / len(d)
+        is_win = (lambda x: x > 0) if name == "net_profit" else (lambda x: x < 0)
         summary["metrics"][name] = {
             "mean_delta": round(mean, 2), "ci95": [lo, hi],
-            "win_pct": round(100 * sum(1 for x in d if x > 0) / len(d), 1)}
+            "win_pct": round(100 * sum(1 for x in d if is_win(x)) / len(d), 1)}
     # time-to-detection: engine-side (ticks from GROUND-TRUTH drift onset,
     # via the arm's SPC probing); blind arm has no monitoring
     lats = [r["mean_detection_latency"] for r in results_a

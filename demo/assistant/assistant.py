@@ -25,6 +25,7 @@ class OperatorAssistant:
         self.total_pm_actions = 0
         self.total_probes_dispatched = 0
         self.total_savings_accumulated = 0.0
+        self._active_pm_requests = set()
 
     def process_tick(self, obs: Dict[str, Any]) -> AssistantReport:
         """Processes one tick of the kanban observation stream and returns an analytical report."""
@@ -104,8 +105,14 @@ class OperatorAssistant:
 
         self.reports_history.append(report)
         self.all_alerts.extend(active_alerts)
-        if "pm" in suggested_actions:
-            self.total_pm_actions += len(suggested_actions["pm"])
+        for p in suggested_actions.get("pm", []):
+            if p not in self._active_pm_requests:
+                self.total_pm_actions += 1
+                self._active_pm_requests.add(p)
+        for p in list(self._active_pm_requests):
+            if cards.get(p, {}).get("state") in ("pm", "broken") or p not in suggested_actions.get("pm", []):
+                self._active_pm_requests.discard(p)
+
         if "probes" in suggested_actions:
             self.total_probes_dispatched += len(suggested_actions["probes"])
 

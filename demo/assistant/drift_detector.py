@@ -16,6 +16,7 @@ class DriftDetector:
         self.drift_detected_tick = {}   # station -> tick when alarm confirmed
         self.confirmed_drift = set()
         self.latencies = []
+        self.last_pm_tick = {}
 
     def update(self, t: int, cusum_scores: Dict[str, float],
                cards: Dict[str, Dict]) -> List[Alert]:
@@ -25,6 +26,17 @@ class DriftDetector:
         for kind, score in cusum_scores.items():
             card = cards.get(kind, {})
             state = card.get("state", "idle")
+
+            # If station has entered PM or overhaul, clear drift flags
+            if state in ("pm", "broken"):
+                self.confirmed_drift.discard(kind)
+                self.drift_onset_tick.pop(kind, None)
+                self.drift_detected_tick.pop(kind, None)
+                self.last_pm_tick[kind] = t
+
+            ticks_since_pm = t - self.last_pm_tick.get(kind, -999)
+            if ticks_since_pm < 35:
+                continue
 
             # Check for drift onset
             if score >= CUSUM_WARNING and kind not in self.drift_onset_tick:
@@ -59,12 +71,6 @@ class DriftDetector:
                              f"(CUSUM={score:.2f}). Additional sampling advised."),
                     context={"cusum": score, "state": state}
                 ))
-
-            # If station has entered PM or overhaul, clear drift flags
-            if state in ("pm", "broken"):
-                self.confirmed_drift.discard(kind)
-                self.drift_onset_tick.pop(kind, None)
-                self.drift_detected_tick.pop(kind, None)
 
         return alerts
 

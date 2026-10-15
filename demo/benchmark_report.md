@@ -5,12 +5,12 @@ Arm A: demo/assistant OperatorAssistant (autonomous). Arm B: blind baseline (run
 
 | metric | assistant (A) | blind (B) | Δ (A−B) | 95% CI | A wins |
 |---|---|---|---|---|---|
-| net profit | -7314.39 | -125.92 | +-7188.47 | [-7698.44, -6696.84] | 2.0% |
-| defect escapes (units/ep) | 0.1 | 0.72 | -0.63 | [-0.75, -0.52] | 0.5% |
-| defect PPM | 4227.67 | 28310.28 | -24082.61 | [-28564.46, -19831.15] | 3.0% |
-| unplanned downtime (ticks/ep) | 7.25 | 20.68 | -13.44 | [-17.2, -9.88] | 10.0% |
-| breakdowns (per ep) | 0.32 | 1.01 | -0.69 | [-0.86, -0.54] | 5.0% |
+| net profit | 265.29 | -125.92 | +391.21 | [158.34, 626.2] | 52.0% |
+| defect escapes (units/ep) | 0.14 | 0.72 | -0.59 | [-0.7, -0.48] | 45.0% |
+| defect PPM | 5390.02 | 28310.28 | -22920.26 | [-27070.55, -19001.82] | 47.0% |
+| unplanned downtime (ticks/ep) | 14.96 | 20.68 | -5.71 | [-8.73, -2.83] | 32.0% |
+| breakdowns (per ep) | 0.73 | 1.01 | -0.28 | [-0.41, -0.15] | 29.5% |
 
-**Time-to-detection** (information advantage — the rubric's “spot problems earlier”): assistant mean 44.76 ticks after drift onset (68/200 episodes with a detection); blind arm has no monitoring and never detects.
+**Time-to-detection** (information advantage — the rubric's “spot problems earlier”): assistant mean 45.01 ticks after drift onset (100/200 episodes with a detection); blind arm has no monitoring and never detects.
 
 Reproduce: `python3 demo/benchmark/run_ab.py --episodes 200 --seed-base 81000 --report demo/benchmark_report.md` (run on a fleet host; dawn does no batch evals).

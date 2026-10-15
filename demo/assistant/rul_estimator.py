@@ -19,6 +19,7 @@ class RULEstimator:
         self.wear_estimates = {}        # station -> float in [0.0, 1.0]
         self.last_ops_seen = {}         # station -> int
         self.last_state = {}            # station -> str
+        self.last_pm_tick = {}          # station -> tick of last PM or overhaul
 
     def estimate_health(self, t: int, cards: Dict[str, Dict],
                         cusum_scores: Dict[str, float]) -> Dict[str, StationHealth]:
@@ -41,15 +42,20 @@ class RULEstimator:
             if prev_state == "pm" and state == "idle":
                 # PM completed: 92% wear reduction
                 curr_wear *= 0.08
+                self.last_pm_tick[kind] = t
             elif prev_state == "broken" and state == "idle":
                 # Overhaul completed: reset to 0.15
                 curr_wear = 0.15
+                self.last_pm_tick[kind] = t
+            elif state in ("pm", "broken"):
+                self.last_pm_tick[kind] = t
             else:
                 # Accumulate wear from ops
                 curr_wear += delta_ops * EST_WEAR_PER_OP
 
-                # Blend with CUSUM drift signal if positive
-                if cusum > 1.0:
+                # Blend with CUSUM drift signal if positive, but avoid stale CUSUM post-PM
+                ticks_since_pm = t - self.last_pm_tick.get(kind, -999)
+                if cusum > 1.0 and ticks_since_pm > 35:
                     # Invert drift: CUSUM reflects accumulated cycle inflation
                     inferred_from_drift = min(1.0, (cusum / 3.5) * 0.75)
                     curr_wear = max(curr_wear, inferred_from_drift)
