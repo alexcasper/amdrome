@@ -32,6 +32,10 @@ DOWNTIME_COST_TICK = 5.0
 INPUT_UNITS_PER_JOB = 1.0
 
 
+INPUT_STOCK_CAP = 32         # max stockpiled input units
+HOLDING_COST_PER_TICK = 0.05 # $/unit/tick — punishes hoarding
+
+
 class NullAgent:
     """Minimal baseline: never bids, never PMs, even buffers, sample mode."""
 
@@ -75,6 +79,8 @@ class Engine:
         self.jobs = {}
         self.next_jid = 0
         self.next_cid = 0
+        self.input_stock = 0        # stockpiled input units (procurement)
+        self.input_bought = 0
         self.open_contracts = []       # awaiting close
         self.won = {}                  # id -> {contract, filled_clean, ...}
         self.settled = []
@@ -155,6 +161,7 @@ class Engine:
 
         # 2. spot market
         self.spot.tick()
+        self.input_cost += HOLDING_COST_PER_TICK * self.input_stock
 
         # 3. contract arrivals (engine-scoped IDs — replay determinism)
         newc, self.next_cid = market.spawn_contracts(
@@ -167,7 +174,8 @@ class Engine:
 
         # 4. agent decision (the ONLY information channel: kanban obs)
         obs = self.view.observe(t, self.line, self._wip(), self.spot.p,
-                                self.open_contracts, self.results_log)
+                                self.open_contracts, self.results_log,
+                                input_stock=self.input_stock)
         self.results_log = []
         actions = self.agent.act(obs) or {}
         self.actions_taken += sum(len(v) if isinstance(v, (list, dict))
@@ -182,6 +190,14 @@ class Engine:
         if "inspect_mode" in actions \
                 and actions["inspect_mode"] in quality.CATCH_PROB:
             self.inspect_mode = actions["inspect_mode"]
+        # procurement: buy input units into stock at the current spot price
+        buy = actions.get("buy_input", 0)
+        if isinstance(buy, (int, float)) and buy > 0:
+            n = min(int(buy), INPUT_STOCK_CAP - self.input_stock)
+            if n > 0:
+                self.input_cost += n * self.spot.p
+                self.input_bought += n
+                self.input_stock += n
         for kind in actions.get("probes", [])[:kanban_mod.SPC_BUDGET]:
             s = self._station(kind)
             if s is not None and s.state == "proc":
@@ -198,7 +214,10 @@ class Engine:
         # 6. arrivals
         if self.rng.random() < self.h["lam"]:
             if len(self.line.inbuf.queue) < self.line.inbuf.cap:
-                self.input_cost += self.spot.p * INPUT_UNITS_PER_JOB
+                if self.input_stock > 0:
+                    self.input_stock -= 1     # consume stockpiled input
+                else:
+                    self.input_cost += self.spot.p * INPUT_UNITS_PER_JOB
                 j = {"id": self.next_jid, "state": "wait",
                      "dest": self.line.inbuf, "born": t,
                      "has_defect": False, "reworks": 0}
@@ -426,6 +445,8 @@ class Engine:
             "unplanned_downtime": self.unplanned_downtime,
             "contracts_won": len(self.settled),
             "spot_units": self.spot_units,
+            "input_bought": self.input_bought,
+            "input_stock_end": self.input_stock,
             "ontime_frac": round(ontime, 3),
             "defect_ppm": round(ppm, 1),
             "downtime_frac": round(self.unplanned_downtime / self.ticks, 3),

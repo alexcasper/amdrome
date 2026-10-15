@@ -62,7 +62,8 @@ class KanbanView:
             "ops_seen": s.ops_done,
         }
 
-    def observe(self, t, line, wip, spot_price, open_contracts, results):
+    def observe(self, t, line, wip, spot_price, open_contracts, results,
+                input_stock=0):
         """Full observation dict — everything the agent is allowed to see."""
         cards = {}
         for s in line.stations:
@@ -75,6 +76,7 @@ class KanbanView:
             "t": t,
             "wip": wip,
             "spot_price": round(spot_price, 2),
+            "input_stock": input_stock,
             "spc_probes_left": self.probes_left,
             "cusum": {k: round(v, 3) for k, v in self.cusum.items()},
             "cards": cards,

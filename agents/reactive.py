@@ -35,6 +35,17 @@ class Agent:
         self.pm_wanted = set()   # latch: request until station enters PM
         self.prev_cusum = {}     # kappa inference: last-seen cusum per kind
         self.cum_cusum = {}      # non-resetting cumulative drift proxy
+        self.spot_ema = None     # procurement: spot-price anchor estimate
+
+    def _procurement(self, obs, out):
+        """Buy input into stock when spot dips well below its EMA."""
+        spot = obs["spot_price"]
+        if self.spot_ema is None:
+            self.spot_ema = spot
+        self.spot_ema = 0.98 * self.spot_ema + 0.02 * spot
+        stock = obs.get("input_stock", 0)
+        if spot < 0.82 * self.spot_ema and stock < 8:
+            out["buy_input"] = 6
 
     def _update_cum_cusum(self, obs):
         for kind, c in obs["cusum"].items():
@@ -51,6 +62,7 @@ class Agent:
         k = self.k
         self._update_cum_cusum(obs)
         out = {"bids": {}, "probes": [], "pm": []}
+        self._procurement(obs, out)
         spot = obs["spot_price"]
         for c in obs["open_contracts"]:
             margin = c["unit_price"] - spot

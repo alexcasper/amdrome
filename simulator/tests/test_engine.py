@@ -113,6 +113,24 @@ class TestInvariants(unittest.TestCase):
         self.assertLessEqual(r["net_profit"], 60000)
         self.assertGreaterEqual(r["actions_taken"], 0)
 
+    def test_procurement_invariants(self):
+        """Input stock stays within [0, cap]; buying works and is capped."""
+        from amdrome_sim.core import INPUT_STOCK_CAP
+
+        class Buyer(DeterministicAgent):
+            def act(self, obs):
+                acts = super().act(obs)
+                acts["buy_input"] = 5        # try to buy every tick
+                return acts
+
+        e2 = Engine(78, agent=Buyer())
+        for t in range(e2.ticks):
+            e2.t = t
+            e2._tick(t)
+            self.assertGreaterEqual(e2.input_stock, 0)
+            self.assertLessEqual(e2.input_stock, INPUT_STOCK_CAP)
+        self.assertGreater(e2.input_bought, 0)
+
     def test_decision_density(self):
         """p0b requirement: >=50 scenario-coupled decision points."""
         e = run_engine(55)

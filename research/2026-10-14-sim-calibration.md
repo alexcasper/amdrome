@@ -59,3 +59,16 @@ data: `research/data/knobs_refine*.jsonl`, `final_calib*.json`,
   env_cteach GPU profile per alex (no torch/CUDA on the ARM fleet).
 - Episode-level d_z (0.82) below 2.0 — match-level scoring (≥5 episodes)
   is the recommended verdict unit for the challenge (documented in DESIGN).
+
+## Procurement surface (added 2026-10-14, post-calibration)
+
+Charter's "input procurement with volatile prices" is now a decision
+surface: `buy_input: n` action, stock cap 32, holding $0.05/unit/tick,
+arrivals consume stock before paying spot; `input_stock` visible in obs.
+Measured (100 paired eps): the naive buy-low policy's edge is −$16 ± 167
+(noise; ~2.5 units bought/ep) — spot volatility [80,120] gives only
+~$300/ep theoretical timing value vs episode noise σ≈2900. Surface kept:
+decision density (anti-tape gate re-validated PASS 13/6/12% tape win),
+RL/expert play may extract the thin edge. Widening spot volatility would
+require full re-calibration — deferred.
+
