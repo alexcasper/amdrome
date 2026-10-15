@@ -21,7 +21,7 @@ class Buffer:
 class Station:
     __slots__ = ("kind", "pos", "job", "remaining", "wear", "state",
                  "downtime_rem", "last_proc_actual", "ops_done",
-                 "pm_schedule_tick", "pm_requested")
+                 "pm_schedule_tick", "pm_requested", "pending_move")
 
     def __init__(self, kind, pos):
         self.kind = kind
@@ -29,12 +29,13 @@ class Station:
         self.job = None
         self.remaining = 0
         self.wear = 0.0
-        self.state = "idle"          # idle | proc | pm | broken | blocked
+        self.state = "idle"          # idle | proc | pm | broken | blocked | moving
         self.downtime_rem = 0
         self.last_proc_actual = PROC_NOMINAL
         self.ops_done = 0
         self.pm_schedule_tick = None
         self.pm_requested = False
+        self.pending_move = None     # (dest_x, dest_y, ticks_left)
 
     def proc_time(self, proc_scale, wear_rate_unused, rng):
         import math
@@ -43,6 +44,28 @@ class Station:
                            * (1.0 + DRIFT_SLOPE * self.wear)))
         self.last_proc_actual = dur
         return dur
+
+
+MOVE_TICKS_PER_CELL = 2   # relocation downtime per manhattan cell
+MOVE_MIN_TICKS = 10
+
+
+def start_move(station, dest, occupied):
+    """Begin relocating a station: offline for distance-scaled ticks."""
+    dist = abs(station.pos[0] - dest[0]) + abs(station.pos[1] - dest[1])
+    ticks = max(MOVE_MIN_TICKS, dist * MOVE_TICKS_PER_CELL)
+    station.pending_move = (dest[0], dest[1], ticks)
+    station.state = "moving"
+    station.downtime_rem = ticks
+    station.pm_requested = False
+    return ticks
+
+
+def complete_move(station):
+    x, y, _ = station.pending_move
+    station.pos = (x, y)
+    station.pending_move = None
+    station.state = "idle"
 
 
 class Line:

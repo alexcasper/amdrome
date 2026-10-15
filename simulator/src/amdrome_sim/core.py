@@ -24,6 +24,7 @@ import random
 from . import degradation, floor, kanban as kanban_mod, labour, market, quality
 from .rng import RngBank, draw_hyperprior
 from .stations import Line, T_UNIT, BUFFER_CAP_DEFAULT
+from . import stations as stations_mod  # noqa: E402  (start_move/complete)
 
 TICKS = 336
 SHIFT = 48
@@ -204,6 +205,25 @@ class Engine:
         # to every station admission from the next tick on)
         if isinstance(actions.get("assign"), dict):
             self.roster.apply_assignment(actions["assign"])
+        # layout: relocate stations (costly — offline for 2 ticks/cell)
+        moves = actions.get("move")
+        if isinstance(moves, dict):
+            occupied = {n.pos for n in self.line.nodes}
+            for kind, dest in list(moves.items())[:4]:
+                s = self._station(kind)
+                if (s is None or s.pending_move is not None
+                        or s.state in ("pm", "broken", "moving")
+                        or not isinstance(dest, (list, tuple))
+                        or len(dest) != 2):
+                    continue
+                x, y = int(dest[0]), int(dest[1])
+                if not (0 <= x < floor.GRID_W and 0 <= y < floor.GRID_H):
+                    continue
+                if (x, y) in occupied:
+                    continue
+                occupied.discard(s.pos)
+                occupied.add((x, y))
+                stations_mod.start_move(s, (x, y), occupied)
         for kind in actions.get("probes", [])[:kanban_mod.SPC_BUDGET]:
             s = self._station(kind)
             if s is not None and s.state == "proc":
@@ -239,17 +259,21 @@ class Engine:
                     and s.kind not in self.drift_onset:
                 self.drift_onset[s.kind] = t
 
-        # 8. maintenance countdowns
+        # 8. maintenance/relocation countdowns
         for s in self.line.stations:
             if s.downtime_rem > 0:
                 s.downtime_rem -= 1
                 if s.state == "pm":
+                    self.planned_downtime += 1
+                elif s.state == "moving":
                     self.planned_downtime += 1
                 else:
                     self.unplanned_downtime += 1
                 if s.downtime_rem <= 0:
                     if s.state == "pm":
                         degradation.complete_pm(s)
+                    elif s.state == "moving":
+                        stations_mod.complete_move(s)
                     else:
                         degradation.complete_repair(s)
                     s.job = None

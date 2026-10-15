@@ -71,6 +71,7 @@ class KanbanView:
                 "state": s.state,
                 "ops_seen": s.ops_done,
                 "queue_before": len(line.buf_before[s].queue),
+                "pos": list(s.pos),
             }
         return {
             "t": t,

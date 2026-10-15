@@ -131,6 +131,37 @@ class TestInvariants(unittest.TestCase):
             self.assertLessEqual(e2.input_stock, INPUT_STOCK_CAP)
         self.assertGreater(e2.input_bought, 0)
 
+    def test_move_mechanics(self):
+        """Station relocation: offline during move, lands at target."""
+        e = Engine(81, agent=DeterministicAgent())
+
+        class MoverOnce(DeterministicAgent):
+            fired = False
+
+            def act(self, obs):
+                acts = super().act(obs)
+                if obs["t"] == 40 and not MoverOnce.fired:
+                    MoverOnce.fired = True
+                    acts["move"] = {"weld": [6, 6]}
+                return acts
+
+        e.agent = MoverOnce()
+        saw_moving = False
+        for t in range(e.ticks):
+            e.t = t
+            e._tick(t)
+            weld = e._station("weld")
+            if weld.state == "moving":
+                saw_moving = True
+                self.assertIsNotNone(weld.pending_move)
+        weld = e._station("weld")
+        self.assertTrue(saw_moving)
+        self.assertEqual(weld.pos, (6, 6))
+        self.assertIsNone(weld.pending_move)
+        # no two entities share a cell after the move
+        cells = [n.pos for n in e.line.nodes]
+        self.assertEqual(len(set(cells)), len(cells))
+
     def test_decision_density(self):
         """p0b requirement: >=50 scenario-coupled decision points."""
         e = run_engine(55)
