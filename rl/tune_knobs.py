@@ -45,7 +45,7 @@ def sample(rng, space):
     k = {}
     for key, (lo, hi) in space.items():
         if key in ("probe_top_k",):
-            k[key] = rng.randrange(lo, hi + 1)
+            k[key] = rng.randrange(int(round(lo)), int(round(hi)) + 1)
         else:
             k[key] = round(rng.uniform(lo, hi), 3)
     return k
@@ -93,11 +93,11 @@ def main():
     space = dict(SPACE_COARSE)
     if args.stage == "refine" and args.center:
         c = json.loads(args.center)
-        space = {k: (max(SPACE_COARSE[k][0], v - (SPACE_COARSE[k][1]
-                                                  - SPACE_COARSE[k][0]) * 0.15),
-                   min(SPACE_COARSE[k][1], v + (SPACE_COARSE[k][1]
-                                                - SPACE_COARSE[k][0]) * 0.15))
-                 for k, v in c.items()}
+        space = {k: (max(SPACE_COARSE[k][0],
+                         v - (SPACE_COARSE[k][1] - SPACE_COARSE[k][0]) * 0.15),
+                   min(SPACE_COARSE[k][1],
+                       v + (SPACE_COARSE[k][1] - SPACE_COARSE[k][0]) * 0.15))
+                 for k, v in c.items() if k in SPACE_COARSE}
 
     best = None
     for ci in range(args.configs):

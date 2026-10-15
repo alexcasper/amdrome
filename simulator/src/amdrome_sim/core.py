@@ -55,13 +55,17 @@ class Engine:
             int.from_bytes(hashlib.sha256(
                 f"{seed}|probes".encode()).digest()[:8], "big"))
 
-        if layout == "compact":
-            ents = floor.compact_layout()
-        else:
-            ents = floor.scattered_layout(self.bank.layout)
+        ents = floor.compact_layout() if layout == "compact" \
+            else floor.scattered_layout(self.bank.layout)
         floor.validate(ents)
         self.line = Line(ents, buffer_total=BUFFER_TOTAL)
         self.line.set_caps([3] * 6)
+
+        # per-station wear multipliers (station-asymmetric ageing — this is
+        # what makes the kanban monitoring layer economically necessary:
+        # scheduled PM services healthy machines while worn ones break)
+        self.wear_mult = {s.kind: self.bank.hyper.uniform(0.5, 1.8)
+                          for s in self.line.stations}
 
         self.roster = labour.Roster(self.bank.layout)
         self.spot = market.SpotMarket(self.h["spot_p0"], self.h["spot_sigma"],
@@ -266,7 +270,8 @@ class Engine:
             if s.remaining > 0:
                 continue
             j = s.job
-            degradation.apply_wear(s, self.h["wear_rate"])
+            degradation.apply_wear(s, self.h["wear_rate"]
+                                   * self.wear_mult[s.kind])
             if s.kind in ("cut", "form", "weld", "paint"):
                 quality.inject(j, s, self.h["p_defect_base"], self.rng)
             self._release(s, j, t, results)

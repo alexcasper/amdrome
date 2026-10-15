@@ -1,0 +1,77 @@
+{
+ "per_agent": {
+  "blind": {
+   "net_profit": -3993.94,
+   "completed_clean": 22.02,
+   "completed_defective": 0.79,
+   "defect_ppm": 34948.29,
+   "breakdowns": 3.37,
+   "pm_count": 0.0,
+   "unplanned_downtime": 71.14,
+   "ontime_frac": 0.78,
+   "rejected": 4.43
+  },
+  "lean": {
+   "net_profit": -2398.92,
+   "completed_clean": 22.91,
+   "completed_defective": 0.61,
+   "defect_ppm": 26050.56,
+   "breakdowns": 2.3,
+   "pm_count": 5.99,
+   "unplanned_downtime": 48.37,
+   "ontime_frac": 0.79,
+   "rejected": 3.99
+  },
+  "reactive": {
+   "net_profit": -5660.26,
+   "completed_clean": 18.37,
+   "completed_defective": 0.19,
+   "defect_ppm": 10078.95,
+   "breakdowns": 0.15,
+   "pm_count": 93.28,
+   "unplanned_downtime": 3.12,
+   "ontime_frac": 0.8,
+   "rejected": 10.04
+  }
+ },
+ "paired_vs_blind": {
+  "lean": {
+   "n": 200,
+   "mean": 1595.0,
+   "sd": 2653.2,
+   "dz": 0.601,
+   "z": 8.5,
+   "p": 1.868337004346037e-17,
+   "win_pct": 68.5
+  },
+  "reactive": {
+   "n": 200,
+   "mean": -1666.3,
+   "sd": 3989.6,
+   "dz": -0.418,
+   "z": -5.9,
+   "p": 3.4909497251122713e-09,
+   "win_pct": 35.0
+  }
+ },
+ "match_level_dz": {
+  "lean": {
+   "n": 40,
+   "mean": 1595.0,
+   "sd": 1159.3,
+   "dz": 1.376,
+   "z": 8.7,
+   "p": 3.2720232777665424e-18,
+   "win_pct": 95.0
+  },
+  "reactive": {
+   "n": 40,
+   "mean": -1666.3,
+   "sd": 1935.1,
+   "dz": -0.861,
+   "z": -5.4,
+   "p": 5.151038937134121e-08,
+   "win_pct": 15.0
+  }
+ }
+}

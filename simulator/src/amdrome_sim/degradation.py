@@ -12,7 +12,10 @@ H0_HAZARD = 0.0001      # rare acts of god (was 0.0005: ~0.9 unpreventable
 BETA_WEAR = 0.30        # cliff multiplier (wear-driven hazard dominates)
 GAMMA_EXP = 6.0
 PM_DURATION = 8        # ticks
-PM_COST = 250.0
+PM_COST = 80.0         # calibrated 2026-10-14: at 250 prevention never paid
+                       # (PM spend > breakdown savings for every policy);
+                       # 80 with wear hyperprior [0.014,0.034] makes
+                       # monitoring-driven PM the profitable strategy
 BREAKDOWN_COST = 1200.0
 REPAIR_LOGN_MU = 3.1   # lognormal repair time
 REPAIR_LOGN_SIG = 0.35

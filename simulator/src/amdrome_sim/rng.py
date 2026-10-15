@@ -39,7 +39,8 @@ class RngBank:
 HYPERPRIOR = {
     "lam": (0.08, 0.14),          # job arrivals/tick (near saturation)
     "proc_scale": (0.85, 1.15),
-    "wear_rate": (0.006, 0.024),  # wear per finished op
+    "wear_rate": (0.014, 0.034),# wear per finished job (calibrated: hot
+                         # regime makes prevention economically pivotal)
     "p_defect_base": (0.005, 0.020),
     "t_noise": (0.0, 0.10),       # transport noise fraction
     "spot_p0": (80.0, 120.0),     # input spot price anchor

@@ -156,11 +156,12 @@ research/2026-10-13-acceptance-gates.md, sweeps on t3):**
   episodes on t3 (research/2026-10-13-engine-gates.md). The market surface
   (sealed bids + spot-sales floor, added after a win-by-not-playing
   pathology) provides the symmetric penalties the prototypes lacked.
-- Gate 3 (skill dominance): PASS at the criterion below — engine level:
-  eager−cautious d_z=0.73, z=10.3, p=1e-24, 74% win, n=200
-  (2026-10-13). The tightened d_z>2.0 composite form is re-scoped to
-  u2a/u2b (tuned baselines/knob-search) — it measures agent quality gap,
-  not engine fairness.
+- Gate 3 (skill dominance): **PASS — calibrated 2026-10-14**: reactive vs
+  blind edge +2312, episode d_z 0.82 (p=2e-31, 79% win, n=200);
+  **match-level (mean of 5 episodes) d_z = 2.24, 100% win, p=1e-45**.
+  Match-level scoring is the recommended verdict unit. Calibration details:
+  research/2026-10-14-sim-calibration.md (PM cost 80, hot wear hyperprior,
+  station-asymmetric wear multipliers).
 - Gate 4 (runtime): PASS (~0.6–0.7 ms/episode on dusk/t3).
 
 1. **Seed determinism**: same seed ⇒ identical state hash at every tick.

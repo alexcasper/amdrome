@@ -8,10 +8,15 @@ set (see research/ knob-search note).
 KNOBS = {
     # tuned v1 (knob-search coarse, t3, 2026-10-13): conservative-PM corner
     "pm_cusum": 4.44,      # PM trigger on CUSUM alarm
+    "pm_cum_cusum": 3.0,   # kappa-adaptive PM: PM when the cumulative
+                           # (non-resetting) CUSUM wear-proxy exceeds this —
+                           # adapts automatically to the scenario wear-rate;
+                           # calibrated 2026-10-14 under station-asymmetric
+                           # wear (edge ~+1300 vs blind, d_z ~0.53)
     "pm_ops": 40,          # ops-based early PM (off in v1: 40 ops unreachable
                            # pre-reset; kept for knob-search/RL)
     "pm_ops_cusum": 1.9,
-    "pm_floor_ticks": 184, # don't PM before this tick (avoid noise PMs)
+    "pm_floor_ticks": 48,  # don't PM in the first shift (warmup noise)
     "probe_top_k": 2,      # SPC probes per tick on busiest stations
     "margin_lo": 30,       # below this margin: shade hard
     "margin_hi": 80,       # above this: bid face
@@ -28,9 +33,23 @@ class Agent:
         if knobs:
             self.k.update(knobs)
         self.pm_wanted = set()   # latch: request until station enters PM
+        self.prev_cusum = {}     # kappa inference: last-seen cusum per kind
+        self.cum_cusum = {}      # non-resetting cumulative drift proxy
+
+    def _update_cum_cusum(self, obs):
+        for kind, c in obs["cusum"].items():
+            prev = self.prev_cusum.get(kind, c)
+            delta = c - prev
+            if delta > 0:             # positive drift accumulates
+                self.cum_cusum[kind] = self.cum_cusum.get(kind, 0.0) + delta
+            self.prev_cusum[kind] = c
+            if obs["cards"][kind]["state"] == "pm":
+                # station serviced: our wear proxy resets with its wear
+                self.cum_cusum[kind] = 0.0
 
     def act(self, obs):
         k = self.k
+        self._update_cum_cusum(obs)
         out = {"bids": {}, "probes": [], "pm": []}
         spot = obs["spot_price"]
         for c in obs["open_contracts"]:
@@ -52,7 +71,9 @@ class Agent:
         if obs["t"] > k["pm_floor_ticks"]:
             for kind, c in obs["cusum"].items():
                 ops = obs["cards"][kind]["ops_seen"]
-                if c > k["pm_cusum"] or (
+                cum = self.cum_cusum.get(kind, 0.0)
+                thr = k["pm_cum_cusum"]
+                if c > k["pm_cusum"] or (thr > 0 and cum > thr) or (
                         ops >= k["pm_ops"] and c > k["pm_ops_cusum"]):
                     self.pm_wanted.add(kind)
         # latch: keep requesting until the station actually enters PM/repair
