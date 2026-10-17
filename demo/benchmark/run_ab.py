@@ -163,7 +163,8 @@ def write_report(path, summary, ra, rb):
         "",
         f"Paired double-blind A/B: {summary['episodes']} episodes, "
         f"seeds {summary['seed_base']}+ (identical scenarios per pair).",
-        "Arm A: demo/assistant OperatorAssistant (autonomous). "
+        "Arm A: demo/assistant OperatorAssistant (autonomous%s). "
+        % (_cfg_flags(summary).replace(" --", ", ") or ", legacy PM"),
         "Arm B: blind baseline (run-to-failure, no monitoring).",
         "",
         "| metric | assistant (A) | blind (B) | Δ (A−B) | 95% CI | A wins |",

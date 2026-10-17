@@ -11,6 +11,7 @@ not used (undefined when ref=0 and dominated by small denominators).
 """
 
 import argparse
+import gzip
 import json
 import random
 from collections import defaultdict
@@ -30,7 +31,8 @@ B = 2000
 def load(paths):
     rows = defaultdict(dict)          # seed -> arm -> row
     for p in paths:
-        with open(p) as f:
+        opener = gzip.open if p.endswith(".gz") else open
+        with opener(p, "rt") as f:
             for line in f:
                 line = line.strip()
                 if not line or not line.startswith("{"):
