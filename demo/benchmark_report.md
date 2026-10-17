@@ -1,19 +1,19 @@
 # amdrome demo — measured improvement: operator assistant vs blind
 
-Paired double-blind A/B: 2000 episodes, seeds 900000+ (identical scenarios per pair).
-Arm A: demo/assistant OperatorAssistant (autonomous, cbm 0.4, full-inspection). 
+Paired double-blind A/B: 200 episodes, seeds 950000+ (identical scenarios per pair).
+Arm A: demo/assistant OperatorAssistant (autonomous, cbm 0.5). 
 Arm B: blind baseline (run-to-failure, no monitoring).
 
 | metric | assistant (A) | blind (B) | Δ (A−B) | 95% CI | A wins |
 |---|---|---|---|---|---|
-| net profit | 999.76 | -4470.87 | +5470.63 | [5327.22, 5602.54] | 96.4% |
-| defect escapes (units/ep) | 0.04 | 0.52 | -0.48 | [-0.51, -0.45] | 39.0% |
-| defect PPM | 1787.89 | 25234.8 | -23446.91 | [-25094.14, -21828.56] | 40.3% |
-| unplanned downtime (ticks/ep) | 9.72 | 82.22 | -72.51 | [-74.28, -70.72] | 95.5% |
-| breakdowns (per ep) | 0.43 | 3.76 | -3.33 | [-3.4, -3.25] | 95.5% |
+| net profit | 3487.43 | -2048.47 | +5535.9 | [5026.24, 6052.6] | 94.5% |
+| defect escapes (units/ep) | 0.03 | 0.54 | -0.51 | [-0.61, -0.4] | 38.0% |
+| defect PPM | 1134.47 | 25170.89 | -24036.42 | [-29163.91, -19235.5] | 40.5% |
+| unplanned downtime (ticks/ep) | 19.24 | 78.97 | -59.73 | [-65.38, -54.02] | 93.0% |
+| breakdowns (per ep) | 0.88 | 3.62 | -2.75 | [-3.0, -2.5] | 90.5% |
 
-**Time-to-detection** (information advantage — the rubric's “spot problems earlier”): assistant mean 87.69 ticks after drift onset (1388/2000 episodes with a detection); blind arm has no monitoring and never detects.
+**Time-to-detection** (information advantage — the rubric's “spot problems earlier”): assistant mean 82.61 ticks after drift onset (157/200 episodes with a detection); blind arm has no monitoring and never detects.
 
-Reproduce: `python3 demo/benchmark/run_ab.py --episodes 2000 --seed-base 900000 --cbm 0.4 --full-inspection --report demo/benchmark_report.md` (run on a fleet host; dawn does no batch evals).
+Reproduce: `python3 demo/benchmark/run_ab.py --episodes 200 --seed-base 950000 --cbm 0.5 --report <out.md>` (run on a fleet host; dawn does no batch evals).
 
-Default assistant (legacy PM, no `--cbm`), seeds 81000+, 200 eps: unplanned downtime −18.1%, escapes −82.6%, net +$1,363/ep (`research/data/abverify/report_legacy_81000.md`). Total downtime incl. planned PM and the claim verdict: `research/2026-10-17-ab-verification.md`.
+Held-out confirmation of this config (2000 eps, seeds 900000+): unplanned downtime −76.5% [75.4, 77.7], total downtime incl. PM +5.9%, escapes −92.2% (escape gain depends on costless full inspection — amdrome-hpm). Legacy assistant (`--legacy`): −18 to −20% unplanned, −82% escapes. Full verdict: `research/2026-10-17-ab-verification.md`.

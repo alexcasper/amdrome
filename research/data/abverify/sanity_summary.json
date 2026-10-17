@@ -1,0 +1,174 @@
+{
+ "asst": {
+  "n": 200,
+  "unplanned_downtime": {
+   "arm": 64.83,
+   "ref": 78.97,
+   "delta": -14.14,
+   "rel_red": 0.179,
+   "rel_ci": [
+    0.1343,
+    0.2257
+   ],
+   "win": 0.63
+  },
+  "total_downtime": {
+   "arm": 80.31,
+   "ref": 78.97,
+   "delta": 1.34,
+   "rel_red": -0.0169,
+   "rel_ci": [
+    -0.0704,
+    0.0352
+   ],
+   "win": 0.435
+  },
+  "breakdowns": {
+   "arm": 3.03,
+   "ref": 3.62,
+   "delta": -0.59,
+   "rel_red": 0.163,
+   "rel_ci": [
+    0.12,
+    0.2051
+   ],
+   "win": 0.49
+  },
+  "completed_defective": {
+   "arm": 0.12,
+   "ref": 0.54,
+   "delta": -0.42,
+   "rel_red": 0.785,
+   "rel_ci": [
+    0.6915,
+    0.8636
+   ],
+   "win": 0.33
+  },
+  "defect_ppm": {
+   "arm": 5384.95,
+   "ref": 25170.89,
+   "delta": -19785.94,
+   "rel_red": 0.7861,
+   "rel_ci": [
+    0.6959,
+    0.8706
+   ],
+   "win": 0.355
+  },
+  "net_profit": {
+   "arm": -584.21,
+   "ref": -2048.47,
+   "delta": 1464.26,
+   "rel_red": 0.7148,
+   "rel_ci": [
+    0.5037,
+    1.0772
+   ],
+   "win": 0.71
+  },
+  "completed_clean": {
+   "arm": 20.98,
+   "ref": 20.24,
+   "delta": 0.75,
+   "rel_red": -0.0368,
+   "rel_ci": [
+    -0.0523,
+    -0.0219
+   ],
+   "win": 0.52
+  },
+  "h0_breakdowns": 0.164,
+  "planned_downtime": 15.47,
+  "pm_count": 1.95
+ },
+ "prod_default": {
+  "n": 200,
+  "unplanned_downtime": {
+   "arm": 19.24,
+   "ref": 78.97,
+   "delta": -59.73,
+   "rel_red": 0.7564,
+   "rel_ci": [
+    0.719,
+    0.7929
+   ],
+   "win": 0.93
+  },
+  "total_downtime": {
+   "arm": 86.45,
+   "ref": 78.97,
+   "delta": 7.48,
+   "rel_red": -0.0947,
+   "rel_ci": [
+    -0.1672,
+    -0.0306
+   ],
+   "win": 0.37
+  },
+  "breakdowns": {
+   "arm": 0.88,
+   "ref": 3.62,
+   "delta": -2.75,
+   "rel_red": 0.7583,
+   "rel_ci": [
+    0.7231,
+    0.7918
+   ],
+   "win": 0.905
+  },
+  "completed_defective": {
+   "arm": 0.03,
+   "ref": 0.54,
+   "delta": -0.51,
+   "rel_red": 0.9439,
+   "rel_ci": [
+    0.8932,
+    0.9817
+   ],
+   "win": 0.38
+  },
+  "defect_ppm": {
+   "arm": 1134.47,
+   "ref": 25170.89,
+   "delta": -24036.42,
+   "rel_red": 0.9549,
+   "rel_ci": [
+    0.9153,
+    0.9865
+   ],
+   "win": 0.405
+  },
+  "net_profit": {
+   "arm": 3487.43,
+   "ref": -2048.47,
+   "delta": 5535.9,
+   "rel_red": 2.7025,
+   "rel_ci": [
+    2.0922,
+    3.8988
+   ],
+   "win": 0.945
+  },
+  "completed_clean": {
+   "arm": 23.23,
+   "ref": 20.24,
+   "delta": 3.0,
+   "rel_red": -0.148,
+   "rel_ci": [
+    -0.1698,
+    -0.1272
+   ],
+   "win": 0.815
+  },
+  "h0_breakdowns": 0.164,
+  "planned_downtime": 67.21,
+  "pm_count": 8.55
+ },
+ "_ref": {
+  "arm": "blind",
+  "n": 200,
+  "h0_breakdowns": 0.148,
+  "breakdowns": 3.62
+ }
+}

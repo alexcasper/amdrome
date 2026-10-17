@@ -21,24 +21,23 @@ downtime, −94.7% escapes, `p<0.0001`, `d_z=3.12`. They were targets written as
 they were results, and every number in that table was invented. They have been
 relabelled and replaced with the measured numbers below.
 
-### Quotable statements (true on held-out data; quote the config with them)
+### Quotable statements (product default since c5d4f4c: `cbm_threshold=0.50`, `full_inspection=True`)
 
-- With condition-based PM from cycle-time trends, the assistant cut **unplanned
-  breakdown downtime by 88%** (95% CI 87–89%) and **breakdowns by 89%** (3.76 → 0.43
-  per episode) against a run-to-failure baseline. That is 2000 paired simulated
-  weeks. The cost is about 12 planned 8-tick PM stops per week. Total station
-  downtime goes **up 24%**, but the line ships **18% more clean units** (20.2 →
-  23.9) and profit rises by **$5,471 per episode** (CI $5,327–5,603; the assistant
-  wins 96% of episodes).
-- **Customer defect escapes fall ~92%** (0.52 → 0.04 units per episode, CI 90–94%).
-  This comes from holding 100% inspection, which the engine charges nothing for.
-- The shipped default assistant (legacy CUSUM/RUL PM, capped at 2 PMs per
-  episode) cuts unplanned downtime by **20%** and escapes by **82%**, and adds
-  **+$1,495 per episode**.
+Coordinator decision (2026-10-17): the default is W=0.50, not 0.40. W=0.40's +24% total-downtime cost is a liability in the pitch. Revisit 0.40 once amdrome-hpm puts a price on inspection.
 
-Do not say: ">70% downtime reduction" without the word *unplanned* and the PM
-trade-off; ">90% escapes" as a strict bound; or anything about "on-time delivery
-94%" or "+$10,440/week". Those were never measured.
+| claim | held-out (seeds 900000+, n=2000, engine @1a91387) | sanity on current default (seeds 950000+, n=200, engine @c5d4f4c after rebalance) | depends on |
+|---|---|---|---|
+| Unplanned breakdown downtime | **−76.5%** [75.4, 77.7] | −75.6% [71.9, 79.3] | — |
+| Total station downtime incl. planned PM | +5.9% | +9.5% | — |
+| Breakdowns | −77% (3.76 → 0.86) | −76% (3.62 → 0.88) | — |
+| Customer defect escapes | −92.2% [90.4, 93.9] | −94.4% [89.3, 98.2] | **amdrome-hpm**: comes entirely from costless 100% inspection (blind + full = −91%) |
+| Net profit vs blind | +$4,927/ep | +$5,536/ep (wins 94.5%) | economics rebalanced 2026-10-17; absolute $ not comparable across engine versions |
+
+Say: "cuts **unplanned** breakdown downtime by about three quarters (−76%, 95% CI 75–78%). Planned maintenance stops replace the breakdowns, so total station downtime rises about 6–10%." For escapes: "about 90%+ fewer escapes in simulation, *while 100% inspection is free in the engine* (amdrome-hpm)."
+
+Do not say: ">70% downtime reduction" without the word *unplanned*; ">90% escapes" without the hpm caveat; or anything about on-time delivery or $/week. Those were never measured.
+
+Superseded W=0.40 figures (−88% unplanned, +24% total) are kept in the tables below for reference.
 
 ## 1. Measured numbers (held-out, n=2000, ref = blind)
 
