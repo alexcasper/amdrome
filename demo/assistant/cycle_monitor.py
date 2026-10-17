@@ -36,42 +36,67 @@ class CycleMonitor:
         self.n_since = {}          # ops since last reset
         self.w0 = {}               # estimated wear at last reset
         self.w_pre_pm = {}         # wear estimate when PM started
-        self.base_obs = []         # log cycle samples at near-zero wear
-        self.sxx = {}              # sum n^2   (per station)
-        self.sxy = {}              # sum n*(y - w0)
+        self._pts = {}             # station -> [(n_since, w0, log cycle)]
+        self._rates = {}
+        self._a = self.A_PRIOR
+        self._dirty = False
         self.samples = 0
 
     # ---------------------------------------------------------- estimation
-    def _intercept(self):
-        if not self.base_obs:
-            return None
-        return sum(self.base_obs) / len(self.base_obs)
+    # Model per op: y = log(cycle) = a + log(1 + DRIFT_SLOPE * (w0 + r_s n))
+    # with a = log(7 * proc_scale) SHARED by all stations and r_s per
+    # station. Fitted jointly (alternating LS, priors on a and r_s): a
+    # separately-estimated intercept from first ops alone is biased and
+    # drags every slope down.
+    A_PRIOR = math.log(7.0)
+    A_PRIOR_SD = 0.09
 
-    def rate(self, kind):
-        """Posterior-mean wear per op (normal prior, weighted LS)."""
+    def _refit(self):
+        rates = self._rates
+        a = self._a
         pw = 1.0 / R_PRIOR_SD ** 2
         lw = 1.0 / (LOGD_SD / DRIFT_SLOPE) ** 2
-        sxx = self.sxx.get(kind, 0.0)
-        sxy = self.sxy.get(kind, 0.0)
-        return max(0.002, (R_PRIOR * pw + sxy * lw) / (pw + sxx * lw))
+        for _ in range(4):
+            # a | r
+            num, cnt = 0.0, 0
+            for kind, pts in self._pts.items():
+                r = rates.get(kind, R_PRIOR)
+                for n, w0, y in pts:
+                    num += y - math.log(1 + DRIFT_SLOPE * (w0 + r * n))
+                    cnt += 1
+            ap = 1.0 / self.A_PRIOR_SD ** 2
+            al = 1.0 / LOGD_SD ** 2
+            a = (self.A_PRIOR * ap + num * al) / (ap + cnt * al)
+            # r_s | a  (linearised: (exp(y-a)-1)/DRIFT_SLOPE - w0 = r n)
+            for kind, pts in self._pts.items():
+                sxx = sxy = 0.0
+                for n, w0, y in pts:
+                    yw = (math.exp(y - a) - 1.0) / DRIFT_SLOPE - w0
+                    sxx += n * n
+                    sxy += n * yw
+                rates[kind] = max(0.002, (R_PRIOR * pw + sxy * lw)
+                                  / (pw + sxx * lw))
+        self._a = a
+        self._dirty = False
+
+    def _intercept(self):
+        return self._a
+
+    def rate(self, kind):
+        """Posterior-mode wear per op for the station."""
+        if self._dirty:
+            self._refit()
+        return self._rates.get(kind, R_PRIOR)
 
     def wear(self, kind):
         return self.w0.get(kind, 0.0) + self.rate(kind) * self.n_since.get(kind, 0)
 
     def _record(self, kind, dur, staff_n):
         d = max(1.0, dur * _staff_mult(staff_n))
-        y = math.log(d)
-        n = self.n_since.get(kind, 0)
-        w0 = self.w0.get(kind, 0.0)
-        if n <= 1 and w0 < 0.05:
-            self.base_obs.append(y)
-        a = self._intercept()
-        if a is not None and n >= 1:
-            # y - a ~= DRIFT_SLOPE * (w0 + r n)
-            yw = (y - a) / DRIFT_SLOPE - w0
-            self.sxx[kind] = self.sxx.get(kind, 0.0) + n * n
-            self.sxy[kind] = self.sxy.get(kind, 0.0) + n * yw
-            self.samples += 1
+        self._pts.setdefault(kind, []).append(
+            (self.n_since.get(kind, 0), self.w0.get(kind, 0.0), math.log(d)))
+        self._dirty = True
+        self.samples += 1
 
     # ---------------------------------------------------------- stream
     def update(self, obs):
