@@ -16,7 +16,7 @@ The system models a modern discrete manufacturing plant governed by system dynam
 The project delivers three core assets:
 1. **The Simulation Engine (`amdrome_sim`):** A high-throughput, pure Python/NumPy simulation core supporting both standard `kaggle_environments` submission protocols and Gymnasium / PettingZoo reinforcement learning interfaces.
 2. **The Sample Agent Ecosystem:** A hierarchy of readable baselines ranging from heuristic lean-kanban policies to reinforcement learning policies (MaskablePPO) tuned on fleet compute hosts.
-3. **The Intelligent Industry Demo Product:** An interactive **Operator Assistant** and live console that ingests streaming kanban telemetry, detects machine degradation early using statistical CUSUM filters, forecasts failure hazards, and recommends high-ROI interventions, demonstrably slashing downtime by $>70\%$ and defect escapes by $>90\%$.
+3. **The Intelligent Industry Demo Product:** An interactive **Operator Assistant** and live console that ingests streaming kanban telemetry, detects machine degradation early using statistical CUSUM filters, forecasts failure hazards, and recommends high-ROI interventions, measured (research/2026-10-17-ab-verification.md, 2000 held-out paired seeds, condition-based PM config) at −88% unplanned breakdown downtime (planned PM downtime rises; total station downtime +24%) and ~−92% defect escapes (the latter driven by costless 100% inspection).
 
 ---
 

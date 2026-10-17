@@ -74,7 +74,7 @@ If the cumulative hazard exceeds 35%, the Assistant flags **Imminent Breakdown H
 ### 2.3 Prescriptive Recommendation Engine
 The Assistant evaluates candidate interventions against an economic loss function:
 $$\mathbb{E}[\Delta \text{Cost}] = \text{Cost}(\text{Intervention}) - \mathbb{E}[\text{Loss if Ignored}]$$
-* **Preventive Maintenance (PM):** Cost = $\$250$ parts + 12 ticks planned downtime. Avoids: $\$1,200$ emergency overhaul + ruined job scrap + 28 ticks unplanned downtime.
+* **Preventive Maintenance (PM):** Cost = $\$80$ parts + 8 ticks planned downtime (engine `degradation.PM_COST`/`PM_DURATION`, calibrated 2026-10-14). Avoids: $\$1,200$ emergency overhaul + $\$300$ scrapped in-process job + lognormal repair (median ~22, min 16 ticks) of unplanned downtime.
 * **Smart Scheduling:** Recommends triggering PM when upstream buffer is depleted or downstream buffer is near capacity, minimizing line starvation impact.
 
 ---
@@ -126,7 +126,7 @@ To prove that the Assistant provides undeniable, quantifiable industrial value (
 * **Control Group (Condition A - Blind / Reactive Operator):**
   * Operates on static thresholds.
   * Only reacts to hard machine breakdowns (run-to-failure maintenance).
-  * Uses fixed 20% sample inspection mode.
+  * Uses the engine default `sample` inspection mode (65% catch probability).
   * Does not strategically allocate SPC probes.
 * **Treatment Group (Condition B - Assistant-Guided Operator):**
   * Continuously evaluates CUSUM drift and RUL.
@@ -134,17 +134,21 @@ To prove that the Assistant provides undeniable, quantifiable industrial value (
   * Executes proactive PM when hazard $> 35\%$ and buffer cushions exist.
   * Dynamically scales inspection to 100% when defect risks spike.
 
-### 4.2 Target Performance Scorecard
+### 4.2 Measured Performance Scorecard (independently verified 2026-10-17)
 
-| Metric | Condition A: Blind Baseline | Condition B: Assistant Guided | Relative Impact | Significance ($p$-value) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Unplanned Downtime Ticks** | $48.2 \pm 14.1$ | **$12.4 \pm 4.6$** | **$-74.3\%$** | $p < 0.0001$ ($d_z = 3.12$) |
-| **Catastrophic Breakdowns** | $2.8 \pm 0.9$ | **$0.4 \pm 0.3$** | **$-85.7\%$** | $p < 0.0001$ ($d_z = 3.45$) |
-| **Defect Escapes to Customer** | $1.9 \pm 1.1$ | **$0.1 \pm 0.2$** | **$-94.7\%$** | $p < 0.0001$ ($d_z = 2.89$) |
-| **On-Time Delivery Rate** | $74.2\%$ | **$93.8\%$** | **$+19.6\%$** | $p < 0.0001$ ($d_z = 2.15$) |
-| **Net Weekly Profit** | $\$21,450 \pm \$3,200$ | **$\$31,890 \pm \$2,850$** | **$+48.7\%$ (+\$10,440)** | $p < 0.0001$ ($d_z = 3.82$) |
+> **Correction.** An earlier version of this section showed a "scorecard" (−74.3% downtime, −94.7% escapes, +19.6pp on-time, +$10,440/week, all "p<0.0001, d_z>2") that was a **target, not a measurement** — none of those numbers were ever produced by a run. Replaced with verified numbers from `research/2026-10-17-ab-verification.md` (2000 held-out paired seeds 900000+, ratio-of-means with paired seed-bootstrap 95% CIs; reproduce with `demo/benchmark/run_ab.py --episodes 2000 --seed-base 900000 --cbm 0.40 --full-inspection`).
 
-Every metric demonstrates overwhelming statistical significance with effect sizes $d_z > 2.0$, completely satisfying **DESIGN §7 Gate 3 (Skill Dominance)**.
+| Metric (per 336-tick episode) | Blind baseline | Assistant, default (legacy PM) | Assistant, condition-based PM (`cbm_threshold=0.40`, `full_inspection`) |
+| :--- | :---: | :---: | :---: |
+| Unplanned downtime (station-ticks under repair) | 82.2 | 66.0 (**−19.7%** [18.4, 21.0]) | 9.7 (**−88.2%** [87.3, 89.0]) |
+| Total station downtime incl. planned PM | 82.2 | 81.4 (−0.9%) | 102.0 (**+24.0%**) |
+| Breakdowns | 3.76 | 3.03 | 0.43 (−88.6%) |
+| Defect escapes to customer (units) | 0.52 | 0.10 (**−81.8%** [79.2, 84.2]) | 0.04 (**−91.8%** [89.9, 93.5]) |
+| Clean units shipped | 20.2 | 21.0 | 23.9 (+18%) |
+| Net profit Δ vs blind | — | +$1,495 | +$5,471 [5,327, 5,603]; wins 96% of episodes |
+
+Caveats: escape reduction is almost entirely the costless `full` inspection mode (blind + full inspection alone: −91.4%); the >70% downtime figure holds for *unplanned* downtime only, bought with ~12 planned 8-tick PM stops per episode. At `cbm_threshold=0.50`: −76.5% unplanned, +5.9% total, +$4,927.
+
 
 ---
 
@@ -163,12 +167,12 @@ A battle-tested, minute-by-minute script for the live pitch or recorded demo vid
 > *With one click, the operator authorizes PM. The technician services the machine, wear is reset, and the line never stops."*
 
 ### 1:45 - 2:30 | The Measured Evidence: Proof Over Vibes
-> *"We didn't just build a dashboard—we proved it works. Across 200 rigorous, paired double-blind simulations evaluated against identical stochastic market and wear scenarios:*  
-> *- Unplanned downtime dropped by seventy-four percent.*  
-> *- Customer defect escapes plummeted by ninety-five percent.*  
-> *- On-time delivery surged to nearly ninety-four percent.*  
-> *That translates to over $10,000 of bottom-line profit gained per factory every single week."*
+> *"We didn't just build a dashboard—we measured it. Across 2,000 paired simulated weeks on held-out scenarios, against a run-to-failure operator:*  
+> *- Unplanned breakdown downtime dropped by eighty-eight percent — we trade surprise breakdowns for short planned maintenance stops, and the line ships eighteen percent more good parts.*  
+> *- Customer defect escapes fell by about ninety percent.*  
+> *- Profit improved in ninety-six percent of simulated weeks."*  
+> *(Numbers: research/2026-10-17-ab-verification.md. Do not quote on-time-delivery or $/week figures — never measured.)*
 
 ### 2:30 - 3:00 | Impact & Future Horizon
 > *"The amdrome engine is designed as an open benchmark for factory RL and autonomous agents, compatible with Kaggle and Gymnasium. But the Operator Assistant proves that right now, intelligent telemetry can transform human operators into proactive problem-solvers.*  
-> *Better reliability, zero customer escapes, and measurable industrial ROI. Thank you."*
+> *Better reliability, near-zero customer escapes, and measured industrial ROI. Thank you."*

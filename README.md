@@ -22,7 +22,7 @@
    * Live streaming **Operator Assistant** running over the kanban observation stream.
    * Statistical CUSUM drift detection and Weibull Remaining Useful Life (RUL) estimation.
    * Interactive Rich terminal operator console with real-time floor topology, andon boards, and prescriptive recommendations.
-   * Automated double-blind A/B evaluation suite demonstrating $>70\%$ downtime reduction and $>90\%$ defect escape reduction.
+   * Automated paired A/B evaluation suite (`demo/benchmark/`), independently verified on 2000 held-out seeds (research/2026-10-17-ab-verification.md): with condition-based PM (`cbm_threshold=0.40`, `full_inspection=True`) the assistant cuts **unplanned** breakdown downtime 88% (95% CI 87–89%; total downtime incl. planned PM +24%) and defect escapes ~92% (CI 90–94%), +\$5.5k net/episode. The default (legacy-PM) assistant: −20% unplanned downtime, −82% escapes.
 
 ---
 
