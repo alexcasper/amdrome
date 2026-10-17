@@ -1,0 +1,67 @@
+{
+ "seed_base": 960000,
+ "episodes": 1000,
+ "per_agent": {
+  "blind": {
+   "net_profit": -2769.033,
+   "completed_clean": 21.552,
+   "completed_defective": 0.576,
+   "unplanned_downtime": 91.813,
+   "breakdowns": 4.195
+  },
+  "reactive": {
+   "net_profit": 16.874,
+   "completed_clean": 21.735,
+   "completed_defective": 0.181,
+   "unplanned_downtime": 58.656,
+   "breakdowns": 2.701
+  },
+  "reactive_noasg": {
+   "net_profit": -254.477,
+   "completed_clean": 22.445,
+   "completed_defective": 0.211,
+   "unplanned_downtime": 63.413,
+   "breakdowns": 2.862
+  },
+  "unstaff_exploit": {
+   "net_profit": -994.956,
+   "completed_clean": 18.431,
+   "completed_defective": 0.472,
+   "unplanned_downtime": 67.979,
+   "breakdowns": 3.105
+  },
+  "assistant": {
+   "net_profit": 3639.694,
+   "completed_clean": 25.008,
+   "completed_defective": 0.058,
+   "unplanned_downtime": 23.528,
+   "breakdowns": 1.039
+  }
+ },
+ "paired_net": {
+  "reactive-blind": {
+   "mean": 2785.91,
+   "dz": 0.855,
+   "z": 27.0,
+   "win_pct": 81.0
+  },
+  "reactive-reactive_noasg": {
+   "mean": 271.35,
+   "dz": 0.102,
+   "z": 3.2,
+   "win_pct": 47.4
+  },
+  "unstaff_exploit-blind": {
+   "mean": 1774.08,
+   "dz": 0.557,
+   "z": 17.6,
+   "win_pct": 70.7
+  },
+  "assistant-blind": {
+   "mean": 6408.73,
+   "dz": 1.671,
+   "z": 52.9,
+   "win_pct": 96.2
+  }
+ }
+}

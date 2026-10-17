@@ -33,7 +33,9 @@ Coordinator decision (2026-10-17): the default is W=0.50, not 0.40. W=0.40's +24
 | Customer defect escapes | −92.2% [90.4, 93.9] | −94.4% [89.3, 98.2] | **amdrome-hpm**: comes entirely from costless 100% inspection (blind + full = −91%) |
 | Net profit vs blind | +$4,927/ep | +$5,536/ep (wins 94.5%) | economics rebalanced 2026-10-17; absolute $ not comparable across engine versions |
 
-Say: "cuts **unplanned** breakdown downtime by about three quarters (−76%, 95% CI 75–78%). Planned maintenance stops replace the breakdowns, so total station downtime rises about 6–10%." For escapes: "about 90%+ fewer escapes in simulation, *while 100% inspection is free in the engine* (amdrome-hpm)."
+**Current engine (after amdrome-svf staffing/skill fixes, d9a7ed8), held-out seeds 900000+, n=2000** — this is the number to quote now: unplanned downtime **−73.6% [72.4, 74.8]**, total downtime incl. PM **+1.6%**, escapes −91.4% [89.9, 92.8] (hpm-dependent), +$6,612/ep vs blind. Details: research/2026-10-17-labour-svf.md.
+
+Say: "cuts **unplanned** breakdown downtime by about three quarters (−74%, 95% CI 72–75% on the current engine). Planned maintenance stops replace the breakdowns, so total station downtime stays roughly flat (+2%)." For escapes: "about 90%+ fewer escapes in simulation, *while 100% inspection is free in the engine* (amdrome-hpm)."
 
 Do not say: ">70% downtime reduction" without the word *unplanned*; ">90% escapes" without the hpm caveat; or anything about on-time delivery or $/week. Those were never measured.
 

@@ -1,0 +1,3 @@
+{"variant": "ops", "seed": 2199, "tape_net": -5223.52, "mediocre_net": 1935.99, "tape_contracts": 0, "tape_clean": 21, "tape_breakdowns": 2}
+{"variant": "ops", "seed": 2200, "tape_net": -992.88, "mediocre_net": 6067.49, "tape_contracts": 0, "tape_clean": 19, "tape_breakdowns": 0}
+{"summary": true, "gate": "anti_tape_engine", "tape_seed": 7, "episodes": 200, "tape_win_pct": {"full": 9.0, "bids": 2.0, "ops": 8.0}, "overall": "PASS"}

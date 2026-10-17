@@ -28,9 +28,9 @@
      dollar figures superseded; see research/2026-10-17-rebalance.md).
      Default assistant (condition-based PM `cbm_threshold=0.50`,
      `full_inspection=True`; research/2026-10-17-ab-verification.md):
-     **unplanned** downtime −76.5% (95% CI 75–78%, 2000 held-out eps;
-     post-rebalance sanity n=200: −75.6%), total downtime incl. planned PM
-     +6–10%, net +$5.5k/episode vs blind. Defect escapes −92–94%, but this
+     **unplanned** downtime −73.6% (95% CI 72–75%, 2000 held-out eps on the
+     current engine after the amdrome-svf labour fixes), total downtime incl.
+     planned PM +1.6%, net +$6.6k/episode vs blind. Defect escapes −92–94%, but this
      depends on 100% inspection being free in the engine (amdrome-hpm).
      (At `cbm_threshold=0.40`: −88% unplanned, +24% total downtime.)
      Legacy assistant (`--legacy`): −20% unplanned. The character roster brackets the

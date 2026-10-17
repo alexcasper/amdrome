@@ -17,3 +17,5 @@ Arm B: blind baseline (run-to-failure, no monitoring).
 Reproduce: `python3 demo/benchmark/run_ab.py --episodes 200 --seed-base 950000 --cbm 0.5 --report <out.md>` (run on a fleet host; dawn does no batch evals).
 
 Held-out confirmation of this config (2000 eps, seeds 900000+): unplanned downtime −76.5% [75.4, 77.7], total downtime incl. PM +5.9%, escapes −92.2% (escape gain depends on costless full inspection — amdrome-hpm). Legacy assistant (`--legacy`): −18 to −20% unplanned, −82% escapes. Full verdict: `research/2026-10-17-ab-verification.md`.
+
+**Current engine (after amdrome-svf labour fixes, d9a7ed8)**, 2000 held-out eps, seeds 900000+: unplanned downtime −73.6% [72.4, 74.8], total downtime incl. PM +1.6%, escapes −91.4% (hpm-dependent), +$6,612/ep (`research/data/abverify/postsvf.md`). The table above predates those fixes.
