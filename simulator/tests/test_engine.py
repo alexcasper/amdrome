@@ -80,9 +80,9 @@ class TestDeterminism(unittest.TestCase):
 
 
 class TestGoldenState(unittest.TestCase):
-    # Pinned 2026-10-14 (v6: labour surface — per-station affinities,
-    # assignment action, skill-coupled defects); deliberate update.
-    GOLDEN_SEED_42 = "bbd090ea123f84511a10e4e619f252e1e94804aaf171fff7cd2b256404bfb82e"
+    # Pinned 2026-10-17 (v7: ECONOMY REBALANCE — contract prices 560-740,
+    # rival pool mu 0.80-0.98, breakdown cost 1400); deliberate update.
+    GOLDEN_SEED_42 = "ab5512cc1033c8a24b04137dfd0f66da1fbf331532036ef8241a06f00cc19688"
 
     def test_golden_hash_stable(self):
         e = run_engine(42)

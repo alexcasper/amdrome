@@ -1,7 +1,7 @@
-{"agent": "random_baseline", "n": 100, "mean_net": -5971.8, "mean_pm": 15.18, "mean_brkd": 1.52, "mean_ppm": 18312.0, "mean_escapes": 0.42}
-{"agent": "char_charlie", "n": 100, "mean_net": -3316.5, "mean_pm": 47.86, "mean_brkd": 0.17, "mean_ppm": 1328.0, "mean_escapes": 0.03}
-{"agent": "char_pete", "n": 100, "mean_net": -5153.2, "mean_pm": 0.0, "mean_brkd": 3.76, "mean_ppm": 17420.0, "mean_escapes": 0.36}
-{"agent": "char_chen", "n": 100, "mean_net": -5594.4, "mean_pm": 0.0, "mean_brkd": 3.46, "mean_ppm": 26969.0, "mean_escapes": 0.55}
-{"agent": "char_milliard", "n": 100, "mean_net": -2957.6, "mean_pm": 61.36, "mean_brkd": 0.13, "mean_ppm": 500.0, "mean_escapes": 0.01}
-{"agent": "blind", "n": 100, "mean_net": -4457.8, "mean_pm": 0.0, "mean_brkd": 3.73, "mean_ppm": 26749.0, "mean_escapes": 0.55}
-{"agent": "reactive", "n": 100, "mean_net": -2239.4, "mean_pm": 4.88, "mean_brkd": 2.34, "mean_ppm": 6094.0, "mean_escapes": 0.13}
+{"agent": "random_baseline", "n": 100, "mean_net": -2827.0, "mean_pm": 15.18, "mean_brkd": 1.52, "mean_ppm": 18312.0, "mean_escapes": 0.42}
+{"agent": "char_charlie", "n": 100, "mean_net": -91.6, "mean_pm": 47.86, "mean_brkd": 0.17, "mean_ppm": 1328.0, "mean_escapes": 0.03}
+{"agent": "char_pete", "n": 100, "mean_net": -2869.2, "mean_pm": 0.0, "mean_brkd": 3.76, "mean_ppm": 17420.0, "mean_escapes": 0.36}
+{"agent": "char_chen", "n": 100, "mean_net": -3518.4, "mean_pm": 0.0, "mean_brkd": 3.46, "mean_ppm": 26969.0, "mean_escapes": 0.55}
+{"agent": "char_milliard", "n": 100, "mean_net": 25.4, "mean_pm": 61.36, "mean_brkd": 0.13, "mean_ppm": 500.0, "mean_escapes": 0.01}
+{"agent": "blind", "n": 100, "mean_net": -2056.9, "mean_pm": 0.0, "mean_brkd": 3.73, "mean_ppm": 26749.0, "mean_escapes": 0.55}
+{"agent": "reactive", "n": 100, "mean_net": 600.0, "mean_pm": 4.88, "mean_brkd": 2.34, "mean_ppm": 6094.0, "mean_escapes": 0.13}

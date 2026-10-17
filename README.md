@@ -22,7 +22,15 @@
    * Live streaming **Operator Assistant** running over the kanban observation stream.
    * Statistical CUSUM drift detection and Weibull Remaining Useful Life (RUL) estimation.
    * Interactive Rich terminal operator console with real-time floor topology, andon boards, and prescriptive recommendations.
-   * Automated paired A/B evaluation suite (`demo/benchmark/`), independently verified on 2000 held-out seeds (research/2026-10-17-ab-verification.md): with condition-based PM (`cbm_threshold=0.40`, `full_inspection=True`) the assistant cuts **unplanned** breakdown downtime 88% (95% CI 87–89%; total downtime incl. planned PM +24%) and defect escapes ~92% (CI 90–94%), +\$5.5k net/episode. The default (legacy-PM) assistant: −20% unplanned downtime, −82% escapes.
+   * Automated paired A/B evaluation suite (`demo/benchmark/`), independently
+     verified on held-out seeds. **Economy REBALANCED 2026-10-17** (contract
+     prices 560–740, rival pool 0.80–0.98, breakdown cost 1400 — all prior
+     dollar figures superseded; see research/2026-10-17-rebalance.md).
+     Post-rebalance, 1000 held-out paired episodes: with condition-based PM
+     (`cbm_threshold=0.40`) the assistant nets **+$4.5k/episode vs blind**
+     and cuts **unplanned downtime 88%** (84.0 → 10.4 ticks) and **defect
+     escapes 94%** (0.52 → 0.03/ep). The character roster brackets the
+     economy: disciplined personas ~break even, negligent ones −3–4k.
 
 ---
 

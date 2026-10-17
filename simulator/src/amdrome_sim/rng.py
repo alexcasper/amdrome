@@ -47,7 +47,8 @@ HYPERPRIOR = {
     "spot_sigma": (0.02, 0.05),   # OU volatility
     "spot_jump": (0.004, 0.02),   # jump probability/tick
     "contract_rate": (0.008, 0.025),  # contract arrivals/tick
-    "rival_bid_mu": (0.85, 1.05),    # rival bid = mu * contract_price
+    "rival_bid_mu": (0.80, 0.98),    # REBALANCED 2026-10-17 (was 0.85-1.05):
+                         # softer rival pool so shade-bidders win their share
 }
 
 

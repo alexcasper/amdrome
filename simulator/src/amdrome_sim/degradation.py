@@ -16,7 +16,8 @@ PM_COST = 80.0         # calibrated 2026-10-14: at 250 prevention never paid
                        # (PM spend > breakdown savings for every policy);
                        # 80 with wear hyperprior [0.014,0.034] makes
                        # monitoring-driven PM the profitable strategy
-BREAKDOWN_COST = 1200.0
+BREAKDOWN_COST = 1400.0  # REBALANCED 2026-10-17 (was 1200) — sharpens the
+                         # discipline gradient: negligence pays ~$1.1k/ep more
 REPAIR_LOGN_MU = 3.1   # lognormal repair time
 REPAIR_LOGN_SIG = 0.35
 DRIFT_ONSET_WEAR = 0.35

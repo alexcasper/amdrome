@@ -11,8 +11,10 @@ LATE_PENALTY_PER_TICK = 15.0
 BID_WINDOW = 8           # ticks a contract stays open for bids
 SPOT_SELL_FRAC = 0.75     # uncontracted units sell on the spot market
 SPOT_DEFECT_PENALTY = 400.0
-CONTRACT_PRICE = (360.0, 540.0)   # face value range (calibrated 2026-10-14:
-                                  # lifted so competent play is profitable)
+CONTRACT_PRICE = (560.0, 740.0)   # REBALANCED 2026-10-17 (alex balance pass;
+                                  # was (360,540)) — tuned so disciplined
+                                  # characters ~break even; see
+                                  # research/2026-10-17-rebalance.md
 
 
 class SpotMarket:
