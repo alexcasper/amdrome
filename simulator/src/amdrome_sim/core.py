@@ -351,7 +351,9 @@ class Engine:
                     staffing = self.roster.staffing_multiplier(s.kind)
                     s.remaining = max(1, round(
                         s.proc_time(self.h["proc_scale"], 0, self.rng)
-                        / staffing))
+                        * staffing))   # multiplier on proc TIME
+                    # (amdrome-svf: was `/ staffing`, which made unstaffed
+                    # stations 23% faster and double-staffed ones slower)
                     j["state"] = "proc"
 
         # 10. processing, hazard, op completion

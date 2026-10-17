@@ -19,7 +19,7 @@ REPAIR_RESET = 0.15         # wear after breakdown overhaul
 R_PRIOR = 0.0276            # prior mean wear/op (hyperprior x station mult)
 R_PRIOR_SD = 0.012
 LOGD_SD = 0.16              # per-op log cycle noise (lognormal 0.15 + rounding)
-STAFF_MULT = {0: 1.3, 1: 1.0}   # engine divides proc time by this; >=2: 0.9
+STAFF_MULT = {0: 1.3, 1: 1.0}   # engine multiplies proc time by this; >=2: 0.9
 
 
 def _staff_mult(n):
@@ -92,7 +92,7 @@ class CycleMonitor:
         return self.w0.get(kind, 0.0) + self.rate(kind) * self.n_since.get(kind, 0)
 
     def _record(self, kind, dur, staff_n):
-        d = max(1.0, dur * _staff_mult(staff_n))
+        d = max(1.0, dur / _staff_mult(staff_n))   # undo staffing scale
         self._pts.setdefault(kind, []).append(
             (self.n_since.get(kind, 0), self.w0.get(kind, 0.0), math.log(d)))
         self._dirty = True

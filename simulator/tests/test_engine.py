@@ -80,9 +80,10 @@ class TestDeterminism(unittest.TestCase):
 
 
 class TestGoldenState(unittest.TestCase):
-    # Pinned 2026-10-17 (v7: ECONOMY REBALANCE — contract prices 560-740,
-    # rival pool mu 0.80-0.98, breakdown cost 1400); deliberate update.
-    GOLDEN_SEED_42 = "ab5512cc1033c8a24b04137dfd0f66da1fbf331532036ef8241a06f00cc19688"
+    # Pinned 2026-10-17 (v8: amdrome-svf staffing fix — proc time is
+    # MULTIPLIED by the staffing multiplier; v7 economy rebalance before
+    # that); deliberate update.
+    GOLDEN_SEED_42 = "40051e223f0962b4a024e3a22f5f0175b74307b3e29517c3ec5e536f0380fab4"
 
     def test_golden_hash_stable(self):
         e = run_engine(42)
@@ -187,6 +188,45 @@ class TestInvariants(unittest.TestCase):
         for banned in ("wear", "has_defect", "remaining"):
             self.assertNotIn(banned, blob,
                              f"ground-truth field {banned} leaked to obs")
+
+
+class TestLabourCoupling(unittest.TestCase):
+    """amdrome-svf regression: staffing must scale proc TIME the right way."""
+
+    def _admission_ratios(self, assign):
+        class Staffer(DeterministicAgent):
+            def act(self, obs):
+                acts = super().act(obs)
+                acts["assign"] = assign(obs)
+                return acts
+
+        e = Engine(5, agent=Staffer())
+        ratios = {}
+        for t in range(e.ticks):
+            prev = {s.kind: s.state for s in e.line.stations}
+            e.t = t
+            e._tick(t)
+            counts = {k: len(v) for k, v in e.roster.assigned.items()}
+            for s in e.line.stations:
+                # fresh admission this tick: remaining was set in step 9
+                # and decremented once in step 10
+                if prev[s.kind] != "proc" and s.state == "proc":
+                    ratios.setdefault(counts.get(s.kind, 0), []).append(
+                        (s.remaining + 1) / s.last_proc_actual)
+        return {n: sum(v) / len(v) for n, v in ratios.items() if v}
+
+    def test_unstaffed_station_is_slower(self):
+        r = self._admission_ratios(
+            lambda obs: {"pack": obs["roster"]["present"]})
+        self.assertGreater(r[0], 1.15, f"unstaffed ratio {r}")
+        self.assertLess(r[0], 1.45, f"unstaffed ratio {r}")
+
+    def test_double_staffed_station_is_faster(self):
+        r = self._admission_ratios(
+            lambda obs: {"cut": 2, "form": 1, "weld": 1, "paint": 1,
+                         "inspect": 1, "pack": 1})
+        self.assertLess(r[2], 0.97, f"double-staffed ratio {r}")
+        self.assertAlmostEqual(r[1], 1.0, delta=0.06)
 
 
 class TestRuntime(unittest.TestCase):
