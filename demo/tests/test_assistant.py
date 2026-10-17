@@ -31,6 +31,14 @@ class TestOperatorAssistant(unittest.TestCase):
         self.assertIsNotNone(self.assistant.recommender)
         self.assertEqual(len(self.assistant.reports_history), 0)
 
+    def test_product_defaults(self):
+        """Defaults decided on amdrome-bqm: CBM PM at 0.50 + full inspection."""
+        self.assertIsNotNone(self.assistant.cbm)
+        self.assertEqual(self.assistant.cbm.w_thr, 0.50)
+        self.assertTrue(self.assistant.full_inspection)
+        legacy = OperatorAssistant(cbm_threshold=None, full_inspection=False)
+        self.assertIsNone(legacy.cbm)
+
     def test_rul_monotonicity(self):
         estimator = RULEstimator()
         cards = {

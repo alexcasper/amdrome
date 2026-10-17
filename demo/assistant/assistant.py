@@ -14,13 +14,16 @@ from .types import ActionType, Alert, AssistantReport, Recommendation, Severity,
 class OperatorAssistant:
     """Consumes the engine's partial-observability kanban stream and emits ranked alerts and recommendations."""
 
-    def __init__(self, autonomous: bool = False, cbm_threshold=None,
-                 full_inspection: bool = False):
-        """cbm_threshold: enable condition-based PM from the per-op
-        cycle-time stream (CycleMonitor) at this estimated-wear threshold
-        (A/B-verified default 0.40; None = legacy CUSUM/RUL PM only).
-        full_inspection: hold inspect_mode='full' from tick 0 (the engine
-        charges nothing for it; legacy = escalate after t>=144/high wear)."""
+    def __init__(self, autonomous: bool = False, cbm_threshold=0.50,
+                 full_inspection: bool = True):
+        """cbm_threshold: condition-based PM from the per-op cycle-time
+        stream (CycleMonitor) at this estimated-wear threshold. Default 0.50
+        (coordinator decision on amdrome-bqm: -76.5% unplanned downtime at
+        only +5.9% total downtime; 0.40 trades +24% total downtime for -88%).
+        None = legacy CUSUM/RUL PM only.
+        full_inspection: hold inspect_mode='full' from tick 0. The engine
+        charges nothing for it (amdrome-hpm), so the escape gain is
+        hpm-dependent; False = legacy escalation after t>=144/high wear."""
         self.autonomous = autonomous
         self.detector = DriftDetector()
         self.rul = RULEstimator()

@@ -67,12 +67,17 @@ def main():
     ap.add_argument("--seed-base", type=int, default=81000)
     ap.add_argument("--report", type=str, default=None,
                     help="write markdown improvement table here")
-    ap.add_argument("--cbm", type=float, default=None,
+    ap.add_argument("--cbm", type=float, default=0.50,
                     help="assistant condition-based PM wear threshold "
-                         "(e.g. 0.40; default: legacy PM logic)")
-    ap.add_argument("--full-inspection", action="store_true",
-                    help="assistant holds 100%% inspection from t=0")
+                         "(default 0.50 = product default)")
+    ap.add_argument("--legacy", action="store_true",
+                    help="pre-2026-10-17 assistant: legacy CUSUM/RUL PM "
+                         "(capped) and adaptive inspection")
     args = ap.parse_args()
+    if args.legacy:
+        args.cbm, args.full_inspection = None, False
+    else:
+        args.full_inspection = True
 
     blind = load_agent(os.path.join(ROOT, "agents", "blind.py"), "blind_ab")
 
@@ -142,12 +147,9 @@ def main():
 
 def _cfg_flags(summary):
     c = summary.get("assistant_config", {})
-    out = ""
-    if c.get("cbm_threshold"):
-        out += " --cbm %s" % c["cbm_threshold"]
-    if c.get("full_inspection"):
-        out += " --full-inspection"
-    return out
+    if not c.get("cbm_threshold"):
+        return " --legacy"
+    return " --cbm %s" % c["cbm_threshold"]
 
 
 def write_report(path, summary, ra, rb):
@@ -164,7 +166,7 @@ def write_report(path, summary, ra, rb):
         f"Paired double-blind A/B: {summary['episodes']} episodes, "
         f"seeds {summary['seed_base']}+ (identical scenarios per pair).",
         "Arm A: demo/assistant OperatorAssistant (autonomous%s). "
-        % (_cfg_flags(summary).replace(" --", ", ") or ", legacy PM"),
+        % _cfg_flags(summary).replace(" --", ", "),
         "Arm B: blind baseline (run-to-failure, no monitoring).",
         "",
         "| metric | assistant (A) | blind (B) | Δ (A−B) | 95% CI | A wins |",
@@ -195,7 +197,7 @@ def write_report(path, summary, ra, rb):
         "detection); blind arm has no monitoring and never detects.",
         "",
         "Reproduce: `python3 demo/benchmark/run_ab.py --episodes %d "
-        "--seed-base %d%s --report demo/benchmark_report.md` "
+        "--seed-base %d%s --report <out.md>` "
         "(run on a fleet host; dawn does no batch evals)."
         % (summary["episodes"], summary["seed_base"], _cfg_flags(summary)),
     ]

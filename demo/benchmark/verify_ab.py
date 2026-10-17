@@ -19,7 +19,8 @@ Arms (LEGIT = observation-only; CEIL = ground-truth oracle, an upper bound
 on what ANY policy could achieve in this engine — never a product claim):
   blind             agents/blind.py (run-to-failure, sample inspection)
   blind_full        blind + inspect_mode=full every tick       (LEGIT)
-  asst              shipped OperatorAssistant(autonomous=True) (LEGIT)
+  asst              LEGACY assistant (cbm_threshold=None, adaptive inspection;
+                    the pre-2026-10-17 shipped default)          (LEGIT)
   asst_full         asst + full inspection from t=0            (LEGIT)
   asst_nocap        asst with PM budget caps removed           (LEGIT)
   asst_nocap_full   both                                       (LEGIT)
@@ -47,6 +48,10 @@ from amdrome_sim import degradation  # noqa: E402
 
 from demo.assistant import OperatorAssistant, Recommender  # noqa: E402
 from demo.assistant.cycle_monitor import CycleMonitor  # noqa: E402
+
+# harness arms are defined relative to the LEGACY assistant so arm names keep
+# their meaning across the 2026-10-17 default flip (prod_* = product path)
+LEGACY = {"cbm_threshold": None, "full_inspection": False}
 
 DEFAULT_ARMS = ("blind,blind_full,asst,asst_full,asst_nocap,asst_nocap_full,"
                 "asst_ops8,asst_ops12,asst_ops16,oracle_w35,oracle_w45")
@@ -108,7 +113,7 @@ class AssistantVariant:
     """Shipped assistant + observation-only overrides."""
 
     def __init__(self, nocap=False, full=False, pm_every_ops=None):
-        self.a = OperatorAssistant(autonomous=True)
+        self.a = OperatorAssistant(autonomous=True, **LEGACY)
         if nocap:
             self.a.recommender = Recommender(max_pm_per_station=None,
                                              max_pm_total=None)
@@ -143,7 +148,7 @@ class CBMVariant:
     free per-op cycle-time stream (demo/assistant/cycle_monitor.py)."""
 
     def __init__(self, w):
-        self.a = OperatorAssistant(autonomous=True)
+        self.a = OperatorAssistant(autonomous=True, **LEGACY)
         self.cm = CycleMonitor(wear_threshold=w)
 
     def act(self, obs):
@@ -161,7 +166,7 @@ class Oracle:
 
     def __init__(self, w):
         self.w = w
-        self.a = OperatorAssistant(autonomous=True)   # bids/probes/caps
+        self.a = OperatorAssistant(autonomous=True, **LEGACY)   # bids/probes/caps
         self.engine = None
 
     def act(self, obs):
@@ -188,6 +193,8 @@ def make_arm(name, blind):
     if name.startswith("asst_ops"):
         return AssistantVariant(nocap=True, full=True,
                                 pm_every_ops=int(name[len("asst_ops"):]))
+    if name == "prod_default":              # whatever OperatorAssistant() ships
+        return OperatorAssistant(autonomous=True)
     if name.startswith("prod_cbm"):          # product code path, as shipped
         return OperatorAssistant(autonomous=True, full_inspection=True,
                                  cbm_threshold=int(name[len("prod_cbm"):]) / 100.0)
