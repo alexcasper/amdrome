@@ -13,10 +13,15 @@ AVOIDED_OVERHAUL_SAVINGS = BREAKDOWN_COST + SCRAP_COST + (24 * DOWNTIME_TICK_COS
 class Recommender:
     """Evaluates plant telemetry and generates ranked, high-ROI prescriptive actions."""
 
-    def __init__(self, pm_floor_ticks: int = 160, pm_cooldown_ticks: int = 60, pm_cusum_thresh: float = 3.5):
+    def __init__(self, pm_floor_ticks: int = 160, pm_cooldown_ticks: int = 60, pm_cusum_thresh: float = 3.5,
+                 max_pm_per_station=1, max_pm_total=2):
         self.pm_floor_ticks = pm_floor_ticks
         self.pm_cooldown_ticks = pm_cooldown_ticks
         self.pm_cusum_thresh = pm_cusum_thresh
+        # PM budget caps (None = uncapped). Defaults preserve the shipped
+        # demo behaviour: at most one PM per station, two per episode.
+        self.max_pm_per_station = max_pm_per_station
+        self.max_pm_total = max_pm_total
         self.pm_wanted = set()          # latch: request until station enters PM
         self.last_pm_tick = {}          # station -> tick of last PM entry
         self.pm_completed_count = {}    # station -> count of PMs initiated
@@ -37,11 +42,13 @@ class Recommender:
         for kind, h in health_map.items():
             if kind in self.pm_wanted or h.state in ("pm", "broken"):
                 continue
-            if self.pm_completed_count.get(kind, 0) >= 1:
+            if (self.max_pm_per_station is not None
+                    and self.pm_completed_count.get(kind, 0) >= self.max_pm_per_station):
                 continue
             if (t - self.last_pm_tick.get(kind, -999)) < self.pm_cooldown_ticks:
                 continue
-            if sum(self.pm_completed_count.values()) >= 2:
+            if (self.max_pm_total is not None
+                    and sum(self.pm_completed_count.values()) >= self.max_pm_total):
                 continue
 
             # Qualifying criteria:
