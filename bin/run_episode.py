@@ -35,10 +35,13 @@ def main():
     ap.add_argument("--episodes", type=int, default=1)
     ap.add_argument("--layout", default="compact",
                     choices=["compact", "scattered"])
+    ap.add_argument("--dump", default=None,
+                    help="write per-tick episode state to this JSONL path")
     args = ap.parse_args()
     for e in range(args.episodes):
         eng = Engine(args.seed + e, agent=SimpleAgent(),
-                     layout=args.layout)
+                     layout=args.layout,
+                     dump_path=args.dump if args.episodes == 1 else None)
         eng.run()
         print(json.dumps(eng.result()))
     print(f"[run_episode] {args.layout} x{args.episodes} done",

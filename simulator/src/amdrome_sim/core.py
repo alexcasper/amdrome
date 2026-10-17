@@ -23,7 +23,7 @@ import random
 
 from . import degradation, floor, kanban as kanban_mod, labour, market, quality
 from .rng import RngBank, draw_hyperprior
-from .stations import Line, T_UNIT, BUFFER_CAP_DEFAULT
+from .stations import Line, Station, Buffer, T_UNIT, BUFFER_CAP_DEFAULT
 from . import stations as stations_mod  # noqa: E402  (start_move/complete)
 
 TICKS = 336
@@ -46,10 +46,12 @@ class NullAgent:
 
 class Engine:
     def __init__(self, seed, agent=None, layout="compact", ticks=TICKS,
-                 shared_flow=True, rival_mu=None):
+                 shared_flow=True, rival_mu=None, dump_path=None):
         self.seed = seed
         self.agent = agent or NullAgent()
         self.ticks = ticks
+        self.dump_path = dump_path
+        self._dump_f = None
         self.bank = RngBank(seed, policy=layout, shared_flow=shared_flow)
         self.h = draw_hyperprior(self.bank.hyper)
         if rival_mu is not None:      # opponent-pool draw (league play)
@@ -144,13 +146,61 @@ class Engine:
     # ------------------------------------------------------------ main loop
 
     def run(self):
+        if self.dump_path:
+            self._dump_f = open(self.dump_path, "w")
         for t in range(self.ticks):
             self.t = t
             self._tick(t)
+            if self._dump_f is not None:
+                self._dump_tick(t)
+        if self._dump_f is not None:
+            self._dump_f.close()
+            self._dump_f = None
         # settle everything still open at episode end
         for cid in list(self.won):
             self._settle(cid, self.ticks)
         return self.result()
+
+    def _dump_tick(self, t):
+        """Append one per-tick state line (ground truth) for the visualizer."""
+        import json as _json
+        entities = []
+        for n in self.line.nodes:
+            e = {"kind": n.kind, "x": n.pos[0], "y": n.pos[1],
+                 "queue": len(n.queue) if isinstance(n, Buffer) else
+                 len(self.line.buf_before[n].queue)
+                 if isinstance(n, Station) else 0}
+            if isinstance(n, Station):
+                e.update({"state": n.state, "wear": round(n.wear, 3)})
+            entities.append(e)
+        jobs = []
+        for j in self.jobs.values():
+            if j["state"] == "proc":
+                node = next((s for s in self.line.stations
+                             if s.job is j), None)
+                pos = node.pos if node else (0, 0)
+            else:
+                pos = j["dest"].pos
+            jobs.append({"id": j["id"], "state": j["state"],
+                         "x": pos[0], "y": pos[1],
+                         "defect": j["has_defect"]})
+        self._dump_f.write(_json.dumps({
+            "t": t,
+            "spot": round(self.spot.p, 1),
+            "entities": entities, "jobs": jobs,
+            "kpi": {
+                "net": round(self.contract_money - self.input_cost
+                             - self.pm_cost - self.breakdown_cost
+                             - self.scrap_cost
+                             - self.unplanned_downtime
+                             * DOWNTIME_COST_TICK, 1),
+                "wip": len(self.jobs),
+                "clean": self.completed_clean,
+                "defective": self.completed_defective,
+                "breakdowns": self.breakdowns,
+                "pm": self.pm_count,
+                "downtime": self.unplanned_downtime,
+            }}) + "\n")
 
     def _tick(self, t):
         results = []
