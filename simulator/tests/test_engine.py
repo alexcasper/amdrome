@@ -80,10 +80,9 @@ class TestDeterminism(unittest.TestCase):
 
 
 class TestGoldenState(unittest.TestCase):
-    # Pinned 2026-10-17 (v8: amdrome-svf staffing fix — proc time is
-    # MULTIPLIED by the staffing multiplier; v7 economy rebalance before
-    # that); deliberate update.
-    GOLDEN_SEED_42 = "40051e223f0962b4a024e3a22f5f0175b74307b3e29517c3ec5e536f0380fab4"
+    # Pinned 2026-10-17 (v9: amdrome-svf skill->defect sign fix; v8 staffing
+    # multiplies proc time; v7 economy rebalance); deliberate update.
+    GOLDEN_SEED_42 = "b921274ded911e4fbd767369282f0d0061c87ebbd95c45c1deb9caa40bdd70c7"
 
     def test_golden_hash_stable(self):
         e = run_engine(42)
@@ -227,6 +226,19 @@ class TestLabourCoupling(unittest.TestCase):
                          "inspect": 1, "pack": 1})
         self.assertLess(r[2], 0.97, f"double-staffed ratio {r}")
         self.assertAlmostEqual(r[1], 1.0, delta=0.06)
+
+
+class TestSkillDefectCoupling(unittest.TestCase):
+    """amdrome-svf: higher worker skill must not RAISE defect probability."""
+
+    def test_defect_prob_decreases_with_skill(self):
+        from amdrome_sim.quality import defect_prob
+        for wear in (0.0, 0.4, 0.8):
+            ps = [defect_prob(wear, 0.01, skill=k)
+                  for k in (0.56, 0.7, 0.85, 1.0)]
+            self.assertEqual(ps, sorted(ps, reverse=True),
+                             f"defect prob not decreasing in skill: {ps}")
+            self.assertAlmostEqual(ps[-1], defect_prob(wear, 0.01), places=12)
 
 
 class TestRuntime(unittest.TestCase):
