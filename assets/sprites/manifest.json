@@ -1,0 +1,67 @@
+{
+ "palette": {
+  "ink": "#1a1c2c",
+  "steel_d": "#5d275d",
+  "steel": "#b13e53",
+  "steel_l": "#ef7d57",
+  "metal_d": "#38b764",
+  "metal": "#a7f070",
+  "warn_y": "#ffcd75",
+  "warn_o": "#f7a41d",
+  "alert_r": "#e83b3b",
+  "cool_b": "#41a6f6",
+  "deep_b": "#3b5dc9",
+  "hud": "#73eff7",
+  "skin": "#f4d29c",
+  "grey": "#94b0c2",
+  "dark": "#333c57",
+  "light": "#f4f4f4"
+ },
+ "sprites": {
+  "station_cnc": {
+   "file": "station_cnc.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "station_arm": {
+   "file": "station_arm.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "conveyor": {
+   "file": "conveyor.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "station_qa": {
+   "file": "station_qa.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "worker": {
+   "file": "worker.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "agv": {
+   "file": "agv.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "andon": {
+   "file": "andon.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "ui_alert": {
+   "file": "ui_alert.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  },
+  "ui_gauge": {
+   "file": "ui_gauge.png",
+   "size": "32x32",
+   "palette": "industrial16"
+  }
+ }
+}
