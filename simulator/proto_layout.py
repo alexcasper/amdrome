@@ -21,7 +21,7 @@ import sys
 
 # ---------------------------------------------------------------- world spec
 
-GRID_W, GRID_H = 16, 12     # default; override with --grid W H
+GRID_W, GRID_H = 12, 8     # default; override with --grid W H
 
 
 def _snake_cells(w, h):

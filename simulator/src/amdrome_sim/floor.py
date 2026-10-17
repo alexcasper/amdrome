@@ -1,9 +1,11 @@
 """Floor: grid (config-parameterizable), entity placement, Manhattan transport."""
 
-# Default grid (2026-10-17 sweep picks from 8x6 / 12x8 / 16x12; see
-# research/2026-10-17-grid-sweep.md). Extra cells are headroom for v1
-# multi-cell station footprints and more simultaneous lines.
-GRID_W, GRID_H = 16, 12
+# Default grid (picked from the 8x6 / 12x8 / 16x12 sweep,
+# research/2026-10-17-grid-sweep.md: 12x8 is the balanced point —
+# policy/scenario/noise = 64/24/12). 16x12 is the challenge tier,
+# reachable via factory expansion (DESIGN.md sec 10); larger grids are
+# headroom for v1 multi-cell footprints and simultaneous lines.
+GRID_W, GRID_H = 12, 8
 
 STATION_TYPES = ["cut", "form", "weld", "paint", "inspect", "pack"]
 
