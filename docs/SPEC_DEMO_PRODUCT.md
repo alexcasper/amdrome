@@ -149,6 +149,8 @@ To prove that the Assistant provides undeniable, quantifiable industrial value (
 
 **Product default (`cbm_threshold=0.50`, `full_inspection=True`)**, same held-out seeds: unplanned downtime 19.3 (**−76.5%** [75.4, 77.7]); total downtime incl. PM 87.1 (+5.9%); breakdowns 0.86; escapes 0.04 (−92.2% [90.4, 93.9], **hpm-dependent**); clean units 23.4; +$4,927/ep. Sanity re-run on the current (rebalanced) engine, seeds 950000+, n=200: −75.6% [71.9, 79.3] unplanned, +9.5% total, −94.4% escapes, +$5,536/ep.
 
+**Current engine (after the amdrome-svf labour fixes), same held-out seeds: −73.6% [72.4, 74.8] unplanned, +1.6% total, −91.4% escapes, +$6,612/ep. Quote these.**
+
 Caveats: escape reduction is almost entirely the costless `full` inspection mode (blind + full inspection alone: −91.4%); the >70% downtime figure holds for *unplanned* downtime only, bought with ~12 planned 8-tick PM stops per episode. At `cbm_threshold=0.50`: −76.5% unplanned, +5.9% total, +$4,927.
 
 
