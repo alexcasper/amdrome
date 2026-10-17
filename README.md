@@ -94,6 +94,24 @@ generators).
 
 ### Planned (spec'd or beaded — not landed)
 
+- **Product catalog — per-item manufacturing chains**: jobs reference a product
+  with its own route (stages may be skipped or revisited), price, quality floor,
+  and penalty profile. Contracts arrive per product with hyperprior-drawn
+  arrival rates, so the product *mix* varies per episode (anti-tape lever);
+  bidding becomes a mix-selection decision that interacts with layout
+  (route length × transport) and labour (per-product skill demands).
+  v1 scope: 3 products; BOM trees / multi-level assembly deferred to v2.
+- **Configurable grid size + balance sweep**: grid dimensions move to config
+  (8×6 / 12×8 / 16×12 being swept) — measuring layout-vs-scenario-vs-noise
+  variance split, runtime, and blocking/transport behaviour per size, so the
+  default is chosen from data rather than assertion.
+- **Factory expansion (rent)**: players start on a base plot and buy adjacent
+  expansion wings (farm buy-a-quadrant style). Rent is a running cost —
+  expansion must pay for itself through throughput and layout freedom. The
+  wing-pricing curve is derived from the size-sweep balance data; designed to
+  interact with product mix (long routes justify bigger floors) and labour
+  (more stations, more workers/techs). Implementation lands after the sweep,
+  behind a config flag, with its own A/B.
 - **RL training harness** (amdrome-x4i, in progress): knob-search +
   Stable-Baselines3 MaskablePPO fleet runs against the Gym core.
 - **RL-tuned sample agent** (amdrome-u2e): readable baseline, tuned by RL.
