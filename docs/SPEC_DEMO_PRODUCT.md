@@ -136,9 +136,9 @@ To prove that the Assistant provides undeniable, quantifiable industrial value (
 
 ### 4.2 Measured Performance Scorecard (independently verified 2026-10-17)
 
-> **Correction.** An earlier version of this section showed a "scorecard" (−74.3% downtime, −94.7% escapes, +19.6pp on-time, +$10,440/week, all "p<0.0001, d_z>2") that was a **target, not a measurement** — none of those numbers were ever produced by a run. Replaced with verified numbers from `research/2026-10-17-ab-verification.md` (2000 held-out paired seeds 900000+, ratio-of-means with paired seed-bootstrap 95% CIs; reproduce with `demo/benchmark/run_ab.py --episodes 2000 --seed-base 900000 --cbm 0.40 --full-inspection`).
+> **Correction.** An earlier version of this section showed a "scorecard" (−74.3% downtime, −94.7% escapes, +19.6pp on-time, +$10,440/week, all "p<0.0001, d_z>2") that was a **target, not a measurement** — none of those numbers were ever produced by a run. Replaced with verified numbers from `research/2026-10-17-ab-verification.md` (2000 held-out paired seeds 900000+, ratio-of-means with paired seed-bootstrap 95% CIs; reproduce with `demo/benchmark/run_ab.py --episodes 2000 --seed-base 900000` (product default, cbm 0.50) or `--cbm 0.40` / `--legacy`; dollar figures predate the 2026-10-17 economy rebalance).
 
-| Metric (per 336-tick episode) | Blind baseline | Assistant, default (legacy PM) | Assistant, condition-based PM (`cbm_threshold=0.40`, `full_inspection`) |
+| Metric (per 336-tick episode) | Blind baseline | Legacy assistant (`--legacy`) | W=0.40 (not default) |
 | :--- | :---: | :---: | :---: |
 | Unplanned downtime (station-ticks under repair) | 82.2 | 66.0 (**−19.7%** [18.4, 21.0]) | 9.7 (**−88.2%** [87.3, 89.0]) |
 | Total station downtime incl. planned PM | 82.2 | 81.4 (−0.9%) | 102.0 (**+24.0%**) |
@@ -146,6 +146,8 @@ To prove that the Assistant provides undeniable, quantifiable industrial value (
 | Defect escapes to customer (units) | 0.52 | 0.10 (**−81.8%** [79.2, 84.2]) | 0.04 (**−91.8%** [89.9, 93.5]) |
 | Clean units shipped | 20.2 | 21.0 | 23.9 (+18%) |
 | Net profit Δ vs blind | — | +$1,495 | +$5,471 [5,327, 5,603]; wins 96% of episodes |
+
+**Product default (`cbm_threshold=0.50`, `full_inspection=True`)**, same held-out seeds: unplanned downtime 19.3 (**−76.5%** [75.4, 77.7]); total downtime incl. PM 87.1 (+5.9%); breakdowns 0.86; escapes 0.04 (−92.2% [90.4, 93.9], **hpm-dependent**); clean units 23.4; +$4,927/ep. Sanity re-run on the current (rebalanced) engine, seeds 950000+, n=200: −75.6% [71.9, 79.3] unplanned, +9.5% total, −94.4% escapes, +$5,536/ep.
 
 Caveats: escape reduction is almost entirely the costless `full` inspection mode (blind + full inspection alone: −91.4%); the >70% downtime figure holds for *unplanned* downtime only, bought with ~12 planned 8-tick PM stops per episode. At `cbm_threshold=0.50`: −76.5% unplanned, +5.9% total, +$4,927.
 
@@ -168,7 +170,7 @@ A battle-tested, minute-by-minute script for the live pitch or recorded demo vid
 
 ### 1:45 - 2:30 | The Measured Evidence: Proof Over Vibes
 > *"We didn't just build a dashboard—we measured it. Across 2,000 paired simulated weeks on held-out scenarios, against a run-to-failure operator:*  
-> *- Unplanned breakdown downtime dropped by eighty-eight percent — we trade surprise breakdowns for short planned maintenance stops, and the line ships eighteen percent more good parts.*  
+> *- Unplanned breakdown downtime dropped by three quarters — we trade surprise breakdowns for short planned maintenance stops, and the line ships about fifteen percent more good parts.*  
 > *- Customer defect escapes fell by about ninety percent.*  
 > *- Profit improved in ninety-six percent of simulated weeks."*  
 > *(Numbers: research/2026-10-17-ab-verification.md. Do not quote on-time-delivery or $/week figures — never measured.)*

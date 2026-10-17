@@ -26,10 +26,14 @@
      verified on held-out seeds. **Economy REBALANCED 2026-10-17** (contract
      prices 560–740, rival pool 0.80–0.98, breakdown cost 1400 — all prior
      dollar figures superseded; see research/2026-10-17-rebalance.md).
-     Post-rebalance, 1000 held-out paired episodes: with condition-based PM
-     (`cbm_threshold=0.40`) the assistant nets **+$4.5k/episode vs blind**
-     and cuts **unplanned downtime 88%** (84.0 → 10.4 ticks) and **defect
-     escapes 94%** (0.52 → 0.03/ep). The character roster brackets the
+     Default assistant (condition-based PM `cbm_threshold=0.50`,
+     `full_inspection=True`; research/2026-10-17-ab-verification.md):
+     **unplanned** downtime −76.5% (95% CI 75–78%, 2000 held-out eps;
+     post-rebalance sanity n=200: −75.6%), total downtime incl. planned PM
+     +6–10%, net +$5.5k/episode vs blind. Defect escapes −92–94%, but this
+     depends on 100% inspection being free in the engine (amdrome-hpm).
+     (At `cbm_threshold=0.40`: −88% unplanned, +24% total downtime.)
+     Legacy assistant (`--legacy`): −20% unplanned. The character roster brackets the
      economy: disciplined personas ~break even, negligent ones −3–4k.
 
 ---
