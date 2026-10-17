@@ -31,13 +31,26 @@
 ### Current (in the engine today)
 
 **World & layout.** Discrete ticks (episode = one production week, 336 ticks).
-Grid floor (e.g. 12×8); stations (`cut, form, weld, paint, inspect, pack` +
-buffers) occupy 1–4-cell footprints. Jobs are batches with ordered routes,
-flowing station→buffer→station with distance-based transport time. Layout is a
-real decision: physical moves take the station offline (cost scales with
-distance); rebinding a line to an already-placed station is the cheap move.
-Measured: layout explains 53–64% of cycle-time variance — skill-dominated with
-real cross-episode variance.
+Grid floor is config-parameterized (`grid_w/grid_h`; default **12×8** —
+challenge tier 16×12, cramped tier 8×6); stations (`cut, form, weld, paint,
+inspect, pack` + buffers) occupy 1–4-cell footprints. Jobs are batches with
+ordered routes, flowing station→buffer→station with distance-based transport
+time. Layout is a real decision: physical moves take the station offline
+(cost scales with distance); rebinding a line to an already-placed station
+is the cheap move. Measured per grid size (400 paired seeds/point, layout
+share of cycle-time variance / scenario share / compact-vs-scattered d_z):
+
+| grid | policy share | scenario share | c−s d_z (cycle) |
+|---|---|---|---|
+| 8×6 | 47% | 38% | 2.49 |
+| 12×8 (default) | 64% | 24% | 2.89 |
+| 16×12 | 77% | 14% | 3.35 |
+
+Bigger floors amplify layout skill and shrink scenario variance;
+transport dominates at every size (blocking never binds with a single
+line). Runtime is flat (~40 ms/episode full engine). Details:
+`research/2026-10-17-grid-sweep.md`; factory expansion (buy-a-wing)
+design at `DESIGN.md` §10.
 
 **Degradation & failure.** Hidden per-station `wear ∈ [0,1]` driven by usage.
 Wear inflates cycle time (gradual drift — the signal SPC monitoring can catch),

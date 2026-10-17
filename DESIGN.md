@@ -23,7 +23,11 @@ feedback loop, which is why monitoring capacity buys measurable KPI gains.
 
 - **Time**: discrete ticks. Episode = one production week, 336 ticks
   (7 shifts × 48) — subject to the runtime budget test (§7).
-- **Floor**: grid, e.g. 12×8 cells. Stations occupy footprints (1–4 cells);
+- **Floor**: grid, config-parameterized (`grid_w/grid_h`, default **12×8** —
+  balanced policy/scenario split; 16×12 is the challenge tier via expansion,
+  see research/2026-10-17-grid-sweep.md). Stations occupy footprints
+  (1–4 cells — the larger grids are headroom for v1 multi-cell footprints
+  and simultaneous lines);
   buffers occupy 1. Moving a station takes it offline for T_move ticks
   (scaled by distance).
 - **Stations** (types): `cut, form, weld, paint, inspect, pack` + `buffer`.
@@ -199,3 +203,29 @@ research/2026-10-13-acceptance-gates.md, sweeps on t3):**
   only for the challenge build.
 - Scoring weights (throughput vs cycle/WIP/cost-unit) — prototype says
   cycle/WIP must carry weight; exact weights TBD after mechanic-2 prototype.
+
+## 10. Factory expansion (buy-a-wing) — design (2026-10-17, alex order)
+
+Players start with a base plot (**8×6**) and may purchase adjacent
+expansion wings (each **+4×6 block**, direction chosen) — modeled on the
+farm's buy-a-quadrant mechanic. The floor is the owned region; unowned
+cells render dark/blocked in the viz and are invalid move/expand targets.
+
+- **Pricing model: upfront purchase** (not per-episode rent) — one
+  decision, clean accounting, mirrors the farm precedent. Wing prices
+  drawn from a HYPERPRIOR per episode (anti-tape: expansion timing is
+  scenario-dependent).
+- **Balance data**: research/2026-10-17-grid-sweep.md — with a single
+  line, extra cells have ~zero direct value (compact is size-invariant);
+  wings are options on multi-line capacity, station duplication, and
+  product-mix long routes. v1 wing prices therefore start LOW and key
+  off what the wing unlocks; re-price once product-mix lands.
+- **Action**: `expand: {direction}` at episode start or at shift
+  boundaries (REALLOC_TICK points). Behind the `factory_expansion`
+  config flag (default off) until its own A/B lands: does buying wings
+  beat staying small across configs (paired, n≥200)?
+- **Interactions**: product-mix (long-route products justify bigger
+  floors — SPEC_PRODUCT_MIX.md); labour (more stations need more
+  workers/techs); anti-tape (larger owned floors raise layout skill
+  share but shrink scenario variance — the hyperprior pricing keeps
+  expansion timing non-memorizable).

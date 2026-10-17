@@ -21,7 +21,27 @@ import sys
 
 # ---------------------------------------------------------------- world spec
 
-GRID_W, GRID_H = 12, 8
+GRID_W, GRID_H = 16, 12     # default; override with --grid W H
+
+
+def _snake_cells(w, h):
+    cells = []
+    for y in range(h):
+        row = [(x, y) for x in range(w)]
+        cells.extend(row if y % 2 == 0 else reversed(row))
+    return cells
+
+
+def place_compact(rng):
+    """Line along the snake walk (wraps on narrow floors)."""
+    ents, i = [], 0
+    cells = _snake_cells(GRID_W, GRID_H)
+    ents.append(("inbuf", cells[i])); i += 1
+    for j, st in enumerate(ROUTE):
+        ents.append((st, cells[i])); i += 1
+        if j < len(ROUTE) - 1:
+            ents.append(("buffer", cells[i])); i += 1
+    return ents
 ROUTE = ["cut", "form", "weld", "paint", "inspect", "pack"]  # station types
 BUFFER_CAP = 4          # jobs per buffer (1-cell kanban card stack)
 T_UNIT = 1.0            # transport ticks per manhattan cell
@@ -53,17 +73,6 @@ def gen_seed(*parts):
 
 
 # ------------------------------------------------------------------ placement
-
-def place_compact(rng):
-    """Straight line along row 3: inbuf cut b form b weld b paint b insp b pack."""
-    ents, x = [], 0
-    ents.append(("inbuf", (x, 3))); x += 1
-    for i, st in enumerate(ROUTE):
-        ents.append((st, (x, 3))); x += 1
-        if i < len(ROUTE) - 1:
-            ents.append(("buffer", (x, 3))); x += 1
-    return ents
-
 
 def place_scattered(rng):
     """Uniform random distinct cells — the 'bad layout' extreme."""
@@ -258,9 +267,15 @@ def main():
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--episodes", type=int, default=1)
     ap.add_argument("--ticks", type=int, default=TICKS)
+    ap.add_argument("--grid", type=int, nargs=2, metavar=("W", "H"),
+                    default=None, help="floor grid size (default 16x12)")
     ap.add_argument("--lam-range", type=float, nargs=2, metavar=("LO", "HI"),
                     default=None, help="override arrival-rate hyperprior")
     args = ap.parse_args()
+
+    global GRID_W, GRID_H
+    if args.grid:
+        GRID_W, GRID_H = args.grid
 
     for e in range(args.episodes):
         rec = run_episode(args.policy, args.seed + e, args.ticks,

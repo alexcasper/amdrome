@@ -1,6 +1,9 @@
-"""Floor: 12x8 grid, entity placement, Manhattan transport."""
+"""Floor: grid (config-parameterizable), entity placement, Manhattan transport."""
 
-GRID_W, GRID_H = 12, 8
+# Default grid (2026-10-17 sweep picks from 8x6 / 12x8 / 16x12; see
+# research/2026-10-17-grid-sweep.md). Extra cells are headroom for v1
+# multi-cell station footprints and more simultaneous lines.
+GRID_W, GRID_H = 16, 12
 
 STATION_TYPES = ["cut", "form", "weld", "paint", "inspect", "pack"]
 
@@ -9,22 +12,30 @@ def manhattan(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
-def compact_layout():
-    """Straight line along row 3: inbuf cut b form b weld b paint b insp b pack."""
-    ents, x = [], 0
-    ents.append(("inbuf", (x, 3)))
-    x += 1
-    for i, st in enumerate(STATION_TYPES):
-        ents.append((st, (x, 3)))
-        x += 1
-        if i < len(STATION_TYPES) - 1:
-            ents.append(("buffer", (x, 3)))
-            x += 1
+def _snake_cells(w, h):
+    """Row-major snake walk — the compact line follows it (wraps on
+    narrow floors instead of overflowing)."""
+    cells = []
+    for y in range(h):
+        row = [(x, y) for x in range(w)]
+        cells.extend(row if y % 2 == 0 else reversed(row))
+    return cells
+
+
+def compact_layout(w=GRID_W, h=GRID_H):
+    """Straight line along the snake walk: inbuf cut b form b weld ..."""
+    cells = _snake_cells(w, h)
+    ents, i = [], 0
+    ents.append(("inbuf", cells[i])); i += 1
+    for j, st in enumerate(STATION_TYPES):
+        ents.append((st, cells[i])); i += 1
+        if j < len(STATION_TYPES) - 1:
+            ents.append(("buffer", cells[i])); i += 1
     return ents
 
 
-def scattered_layout(rng):
-    cells = [(x, y) for x in range(GRID_W) for y in range(GRID_H)]
+def scattered_layout(rng, w=GRID_W, h=GRID_H):
+    cells = [(x, y) for x in range(w) for y in range(h)]
     rng.shuffle(cells)
     picked = cells[:len(STATION_TYPES) * 2]
     ents = [("inbuf", picked[0])]
@@ -35,12 +46,12 @@ def scattered_layout(rng):
     return ents
 
 
-def validate(ents):
+def validate(ents, w=GRID_W, h=GRID_H):
     """Invariants: distinct cells, in-bounds, one of each station type."""
     cells = [p for _, p in ents]
     assert len(set(cells)) == len(cells), "overlapping entities"
     for x, y in cells:
-        assert 0 <= x < GRID_W and 0 <= y < GRID_H, "out of bounds"
+        assert 0 <= x < w and 0 <= y < h, "out of bounds"
     kinds = [k for k, _ in ents]
     for st in STATION_TYPES:
         assert kinds.count(st) == 1, f"missing/dup station {st}"

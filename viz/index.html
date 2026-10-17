@@ -34,7 +34,7 @@
   <span id="ticker">loading episode…</span>
 </header>
 <main>
-  <canvas id="floor" width="816" height="544"></canvas>
+  <canvas id="floor" width="768" height="576"></canvas>
   <div id="side">
     <div id="controls">
       <button id="play">▶ play</button>
@@ -62,7 +62,7 @@
 
 <script>
 "use strict";
-const GRID_W = 12, GRID_H = 8, CELL = 68;
+let GRID_W = 16, GRID_H = 12, CELL = 48;   // overridden by dump's "grid"
 const cv = document.getElementById("floor"), ctx = cv.getContext("2d");
 
 const SPRITES = {  // kind -> sprite file (station sprites from the pack)
@@ -94,6 +94,12 @@ function fetchEpisode() {
     return r.text();
   }).then(txt => {
     frames = txt.trim().split("\n").map(JSON.parse);
+    if (frames[0] && frames[0].grid) {
+      [GRID_W, GRID_H] = frames[0].grid;
+      CELL = Math.floor(Math.min(960 / GRID_W, 640 / GRID_H));
+      cv.width = GRID_W * CELL;
+      cv.height = GRID_H * CELL;
+    }
     document.getElementById("scrub").max = frames.length - 1;
     document.getElementById("tickmax").textContent = frames.length - 1;
     cur = 0; render(); setPlaying(true);

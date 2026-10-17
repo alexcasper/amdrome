@@ -46,12 +46,15 @@ class NullAgent:
 
 class Engine:
     def __init__(self, seed, agent=None, layout="compact", ticks=TICKS,
-                 shared_flow=True, rival_mu=None, dump_path=None):
+                 shared_flow=True, rival_mu=None, dump_path=None,
+                 grid_w=None, grid_h=None):
         self.seed = seed
         self.agent = agent or NullAgent()
         self.ticks = ticks
         self.dump_path = dump_path
         self._dump_f = None
+        self.grid_w = grid_w or floor.GRID_W
+        self.grid_h = grid_h or floor.GRID_H
         self.bank = RngBank(seed, policy=layout, shared_flow=shared_flow)
         self.h = draw_hyperprior(self.bank.hyper)
         if rival_mu is not None:      # opponent-pool draw (league play)
@@ -62,9 +65,11 @@ class Engine:
             int.from_bytes(hashlib.sha256(
                 f"{seed}|probes".encode()).digest()[:8], "big"))
 
-        ents = floor.compact_layout() if layout == "compact" \
-            else floor.scattered_layout(self.bank.layout)
-        floor.validate(ents)
+        ents = floor.compact_layout(self.grid_w, self.grid_h) \
+            if layout == "compact" \
+            else floor.scattered_layout(self.bank.layout, self.grid_w,
+                                        self.grid_h)
+        floor.validate(ents, self.grid_w, self.grid_h)
         self.line = Line(ents, buffer_total=BUFFER_TOTAL)
         self.line.set_caps([3] * 6)
 
@@ -186,6 +191,7 @@ class Engine:
                          "defect": j["has_defect"]})
         self._dump_f.write(_json.dumps({
             "t": t,
+            "grid": [self.grid_w, self.grid_h],
             "spot": round(self.spot.p, 1),
             "entities": entities, "jobs": jobs,
             "kpi": {
@@ -267,7 +273,7 @@ class Engine:
                         or len(dest) != 2):
                     continue
                 x, y = int(dest[0]), int(dest[1])
-                if not (0 <= x < floor.GRID_W and 0 <= y < floor.GRID_H):
+                if not (0 <= x < self.grid_w and 0 <= y < self.grid_h):
                     continue
                 if (x, y) in occupied:
                     continue
