@@ -46,6 +46,7 @@ from amdrome_sim import Engine  # noqa: E402
 from amdrome_sim import degradation  # noqa: E402
 
 from demo.assistant import OperatorAssistant, Recommender  # noqa: E402
+from demo.assistant.cycle_monitor import CycleMonitor  # noqa: E402
 
 DEFAULT_ARMS = ("blind,blind_full,asst,asst_full,asst_nocap,asst_nocap_full,"
                 "asst_ops8,asst_ops12,asst_ops16,oracle_w35,oracle_w45")
@@ -137,6 +138,24 @@ class AssistantVariant:
         return out
 
 
+class CBMVariant:
+    """Shipped assistant + full inspection + condition-based PM from the
+    free per-op cycle-time stream (demo/assistant/cycle_monitor.py)."""
+
+    def __init__(self, w):
+        self.a = OperatorAssistant(autonomous=True)
+        self.cm = CycleMonitor(wear_threshold=w)
+
+    def act(self, obs):
+        out = dict(self.a.act(obs) or {})
+        out["inspect_mode"] = "full"
+        self.cm.update(obs)
+        pm = set(out.get("pm", [])) | set(self.cm.pm_requests(obs))
+        if pm:
+            out["pm"] = sorted(pm)
+        return out
+
+
 class Oracle:
     """CEILING ONLY: reads ground-truth wear via the engine handle."""
 
@@ -169,6 +188,8 @@ def make_arm(name, blind):
     if name.startswith("asst_ops"):
         return AssistantVariant(nocap=True, full=True,
                                 pm_every_ops=int(name[len("asst_ops"):]))
+    if name.startswith("asst_cbm"):
+        return CBMVariant(int(name[len("asst_cbm"):]) / 100.0)
     if name.startswith("oracle_w"):
         return Oracle(int(name[len("oracle_w"):]) / 100.0)
     raise SystemExit(f"unknown arm {name}")
@@ -194,6 +215,12 @@ def run_one(seed, arm_name, blind):
         + sum(1 for j in e.jobs.values() if j["has_defect"]),
         "state_hash": e.state_hash(),
     })
+    if isinstance(agent, CBMVariant):     # estimator audit (truth vs est.)
+        errs = []
+        for s in e.line.stations:
+            true_r = e.h["wear_rate"] * e.wear_mult[s.kind]
+            errs.append(abs(agent.cm.rate(s.kind) - true_r) / true_r)
+        r["cbm_rate_relerr"] = round(sum(errs) / len(errs), 4)
     return r
 
 
