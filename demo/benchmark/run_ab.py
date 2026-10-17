@@ -67,12 +67,19 @@ def main():
     ap.add_argument("--seed-base", type=int, default=81000)
     ap.add_argument("--report", type=str, default=None,
                     help="write markdown improvement table here")
+    ap.add_argument("--cbm", type=float, default=None,
+                    help="assistant condition-based PM wear threshold "
+                         "(e.g. 0.40; default: legacy PM logic)")
+    ap.add_argument("--full-inspection", action="store_true",
+                    help="assistant holds 100%% inspection from t=0")
     args = ap.parse_args()
 
     blind = load_agent(os.path.join(ROOT, "agents", "blind.py"), "blind_ab")
 
     from demo.assistant import OperatorAssistant
-    arm_a_factory = lambda: OperatorAssistant(autonomous=True)  # noqa: E731
+    arm_a_factory = lambda: OperatorAssistant(  # noqa: E731
+        autonomous=True, cbm_threshold=args.cbm,
+        full_inspection=args.full_inspection)
 
     rows = []
     results_a, results_b, summaries_a = [], [], []
@@ -107,7 +114,9 @@ def main():
         "breakdowns": deltas("breakdowns", "breakdowns"),
     }
     summary = {"summary": True, "episodes": args.episodes,
-               "seed_base": args.seed_base, "metrics": {}}
+               "seed_base": args.seed_base, "metrics": {},
+               "assistant_config": {"cbm_threshold": args.cbm,
+                                    "full_inspection": args.full_inspection}}
     for name, d in metrics.items():
         lo, hi = bootstrap_ci(d)
         mean = sum(d) / len(d)
@@ -129,6 +138,16 @@ def main():
     if args.report:
         write_report(args.report, summary, results_a, results_b)
         print(f"[run_ab] report written to {args.report}", file=sys.stderr)
+
+
+def _cfg_flags(summary):
+    c = summary.get("assistant_config", {})
+    out = ""
+    if c.get("cbm_threshold"):
+        out += " --cbm %s" % c["cbm_threshold"]
+    if c.get("full_inspection"):
+        out += " --full-inspection"
+    return out
 
 
 def write_report(path, summary, ra, rb):
@@ -174,10 +193,10 @@ def write_report(path, summary, ra, rb):
         f"({ttd['episodes_with_detection']}/{len(ra)} episodes with a "
         "detection); blind arm has no monitoring and never detects.",
         "",
-        "Reproduce: `python3 demo/benchmark/run_ab.py --episodes 200 "
-        "--seed-base %d --report demo/benchmark_report.md` "
+        "Reproduce: `python3 demo/benchmark/run_ab.py --episodes %d "
+        "--seed-base %d%s --report demo/benchmark_report.md` "
         "(run on a fleet host; dawn does no batch evals)."
-        % summary["seed_base"],
+        % (summary["episodes"], summary["seed_base"], _cfg_flags(summary)),
     ]
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")

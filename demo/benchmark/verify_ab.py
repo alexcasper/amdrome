@@ -188,6 +188,9 @@ def make_arm(name, blind):
     if name.startswith("asst_ops"):
         return AssistantVariant(nocap=True, full=True,
                                 pm_every_ops=int(name[len("asst_ops"):]))
+    if name.startswith("prod_cbm"):          # product code path, as shipped
+        return OperatorAssistant(autonomous=True, full_inspection=True,
+                                 cbm_threshold=int(name[len("prod_cbm"):]) / 100.0)
     if name.startswith("asst_cbm"):
         return CBMVariant(int(name[len("asst_cbm"):]) / 100.0)
     if name.startswith("oracle_w"):

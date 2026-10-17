@@ -4,20 +4,29 @@ Bead: amdrome-a3j (SPEC_DEMO_PRODUCT.md)
 """
 
 from typing import Any, Dict, List
+from .cycle_monitor import CycleMonitor
 from .drift_detector import DriftDetector
-from .recommender import Recommender
+from .recommender import AVOIDED_OVERHAUL_SAVINGS, Recommender
 from .rul_estimator import RULEstimator
-from .types import Alert, AssistantReport, Recommendation, Severity, StationHealth
+from .types import ActionType, Alert, AssistantReport, Recommendation, Severity, StationHealth
 
 
 class OperatorAssistant:
     """Consumes the engine's partial-observability kanban stream and emits ranked alerts and recommendations."""
 
-    def __init__(self, autonomous: bool = False):
+    def __init__(self, autonomous: bool = False, cbm_threshold=None,
+                 full_inspection: bool = False):
+        """cbm_threshold: enable condition-based PM from the per-op
+        cycle-time stream (CycleMonitor) at this estimated-wear threshold
+        (A/B-verified default 0.40; None = legacy CUSUM/RUL PM only).
+        full_inspection: hold inspect_mode='full' from tick 0 (the engine
+        charges nothing for it; legacy = escalate after t>=144/high wear)."""
         self.autonomous = autonomous
         self.detector = DriftDetector()
         self.rul = RULEstimator()
         self.recommender = Recommender()
+        self.cbm = CycleMonitor(cbm_threshold) if cbm_threshold else None
+        self.full_inspection = full_inspection
 
         # Telemetry logs & metrics
         self.reports_history = []
@@ -77,6 +86,37 @@ class OperatorAssistant:
         recommendations = self.recommender.generate_recommendations(
             t, health_map, open_contracts, spot_price, probes_left, probe_candidates
         )
+
+        # 5b. Condition-based PM from realised per-op cycle times
+        if self.cbm is not None:
+            self.cbm.update(obs)
+            already = set()
+            for rec in recommendations:
+                already.update(rec.payload.get("pm", []))
+            for kind in self.cbm.pm_requests(obs):
+                if kind in already:
+                    continue
+                recommendations.append(Recommendation(
+                    priority=1,
+                    action_type=ActionType.TRIGGER_PM,
+                    target=kind,
+                    rationale=(f"Station {kind.upper()} cycle-time trend implies wear "
+                               f"~{self.cbm.wear(kind):.0%} (rate {self.cbm.rate(kind):.3f}/op). "
+                               f"PM now (8 planned ticks) pre-empts a breakdown "
+                               f"(repair >=16 ticks + scrapped job)."),
+                    expected_savings=round(AVOIDED_OVERHAUL_SAVINGS, 2),
+                    payload={"pm": [kind]}
+                ))
+        if self.full_inspection:
+            recommendations.append(Recommendation(
+                priority=3,
+                action_type=ActionType.ADJUST_INSPECTION,
+                target="inspect",
+                rationale="Hold 100% inspection (no throughput cost at the gate).",
+                expected_savings=850.0,
+                payload={"inspect_mode": "full"}
+            ))
+        recommendations.sort(key=lambda r: (r.priority, -r.expected_savings))
 
         # 6. Synthesize combined suggested actions for engine
         suggested_actions: Dict[str, Any] = {}
