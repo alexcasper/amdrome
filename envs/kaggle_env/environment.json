@@ -1,0 +1,29 @@
+{
+  "name": "amdrome",
+  "title": "amdrome — Intelligent Industry factory challenge",
+  "description": "Discrete-manufacturing factory simulation: layout, labour, kanban monitoring under partial observability, and shared-market bidding. Anti-tape by design: per-episode hyperprior draws, no canonical opponent pool.",
+  "version": "0.1.0",
+  "agents": [
+    {
+      "name": "operator",
+      "act": "act(obs) -> actions",
+      "actions": {
+        "bids": "{contract_id: price} — sealed bids on open contracts",
+        "probes": "[station_kind] — SPC cycle-time samples (budget 8/shift)",
+        "pm": "[station_kind] — preventive maintenance when idle",
+        "inspect_mode": "skip|sample|full — inspection policy (shift boundary)",
+        "caps": "[inbuf,b1..b5] — buffer capacity reallocation (shift boundary, total 18)"
+      },
+      "observation": "kanban-only: station cards, CUSUM state, WIP count, spot price, open contracts, last-tick results. Ground truth (wear, defect status) never exposed.",
+      "timeout": {"per_step_ms": 250, "episode_bank_s": 60}
+    }
+  ],
+  "configuration": {
+    "episode_ticks": 336,
+    "shift_ticks": 48,
+    "floor": "12x8",
+    "score": "net_profit = contract revenue - late/escape penalties - input - PM/breakdown/scrap/downtime costs"
+  },
+  "runner": "bin/run_match.py --agents <files> --seed N --episodes N",
+  "engine_package": "simulator/src/amdrome_sim (pure stdlib, python>=3.10)"
+}
