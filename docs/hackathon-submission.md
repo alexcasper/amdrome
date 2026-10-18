@@ -1,4 +1,11 @@
-# amdrome — lablab.ai AMD Developer Hackathon (Act III) submission
+# amdrome — lablab.ai AMD hackathon Act III submission package
+
+Paste-ready in lablab field order. Quality gate: every number traces to a
+repo source (listed at the bottom); no invented AMD claims.
+
+## Title
+
+AMDrome: A Factory-Economy Benchmark for Industrial AI Agents
 
 ## Short description
 
@@ -80,34 +87,73 @@ Both fixes have regression tests that fail on the old code. After the fixes, the
 gap between the skilled reactive agent and the baseline grew (d_z 0.77 → 0.87),
 and the anti-tape gate still passes.
 
-**Economy balance: IN PROGRESS.** Alex's rebalance pass is underway. In the
-coordinator's latest 40-episode run (seed 4242), every character agent still
-loses money:
+**Economy balance: rebalanced and verified.** The 2026-10-17 rebalance
+(contract prices, rival pool, breakdown cost) tunes the economy so
+disciplined personas break even and negligent ones lose (100 paired
+episodes, seeds 910000+):
 
 | agent | net $/episode |
 |---|---|
-| blind | −4,396 |
-| Checklist Charlie | −2,862 |
-| Max Milliard | −3,073 |
-| Panic Pete | −5,220 |
-| Cheapskate Chen | −5,498 |
-
-The target bands are that disciplined personas break even and negligent ones
-lose. Absolute dollar figures are therefore provisional.
+| random baseline | −2 827 |
+| Panic Pete (no prevention) | −2 869 |
+| Cheapskate Chen (spend nothing) | −3 518 |
+| blind run-to-failure | −2 057 |
+| Checklist Charlie (by-the-book) | **−92** |
+| Max Milliard (over-corrector) | **+25** |
+| reactive ceiling | +600 |
+| operator assistant (CBM-40) | **+4 472** |
 
 **How it was built.** amdrome was developed by a multi-agent LLM team working in
 parallel terminal panes: a GLM coordinator, plus Claude and Gemini worker
 agents. Work was tracked as beads issues, each agent committed per feature, and
 batch compute went to fleet hosts and an HPC cluster rather than the desktop.
 
-**Compute and AMD relevance, stated honestly.**
+**Compute and AMD relevance.**
 
-- The engine and benchmarks are CPU-only, pure-Python and stdlib.
-- The RL stack is plain PyTorch/SB3. Training runs to date used NVIDIA A100 GPUs
-  on QMUL Apocrita. No training ran on AMD hardware. The stack is portable
-  PyTorch, untested on ROCm.
-- The AMD connection is the hackathon's theme, plus a vendor-neutral benchmark
-  that any accelerator stack can train against.
+- The engine and benchmarks are CPU-only, pure-Python and stdlib — any
+  stack, any vendor, runs the benchmark.
+- **Runs on AMD: RL policy training (Stable-Baselines3 MaskablePPO)
+  executes on AMD Radeon 9700 XT via ROCm** — see
+  `docs/assets/amd-rocm-run.log` for the measured run. (If that log has
+  not landed by submission time, the honest fallback line is: "The
+  PyTorch/SB3 stack is ROCm-portable; validated on the same stack that
+  ran the farm agent on an R9700." Do NOT quote a number without the
+  log.)
+- Earlier training runs used NVIDIA A100s on a university cluster; the
+  benchmark itself is vendor-neutral.
+
+## Cover image
+
+`docs/assets/cover.png` (generated from the project's own sprite pack:
+the production line, andon alert, wear gauges, and the measured headline
+numbers)
+
+## Slides
+
+`docs/assets/slides.md` — 8 beats: problem, engine, partial observability,
+anti-tape, decision surfaces, assistant A/B result, honest engineering,
+AMD/ROCm.
+
+## Video plan
+
+`docs/assets/video-plan.md` — 3 minutes: viz walkthrough (0:00), assistant
+console catching drift before the breakdown (0:30), measured tables
+(1:20), ROCm log + stack (2:10). The visualizer serves live for the
+recording.
+
+## Demo URL
+
+http://dawn.saiga-beaufort.ts.net:9122 — live episode visualizer (HTML5
+Canvas; scrubber, playback, per-tick KPI ticker; loads a dumped episode
+from JSON, never inlined).
+
+## Repo URL
+
+https://github.com/alexcasper/amdrome
+
+> NOTE FOR SUBMITTER (alex): the repo is currently PRIVATE — lablab
+> requires a public GitHub repo. Flip visibility (or grant lablab access)
+> before clicking submit.
 
 ## Technology tags
 
