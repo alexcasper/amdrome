@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>amdrome — episode visualizer</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #14171c; color: #d8dee9;
+         font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; gap: 16px; align-items: baseline;
+           padding: 10px 16px; background: #1c2129; border-bottom: 1px solid #2a313c; }
+  header h1 { font-size: 16px; margin: 0; color: #88c0d0; }
+  #ticker { font-variant-numeric: tabular-nums; color: #a3be8c; }
+  #ticker b { color: #eceff4; }
+  main { display: flex; gap: 12px; padding: 12px 16px; }
+  canvas { background: #0d1014; border: 1px solid #2a313c; border-radius: 6px; }
+  #side { display: flex; flex-direction: column; gap: 10px; min-width: 210px; }
+  #controls { display: flex; flex-direction: column; gap: 8px;
+              background: #1c2129; padding: 12px; border-radius: 6px;
+              border: 1px solid #2a313c; }
+  button, select { background: #2e3440; color: #d8dee9; border: 1px solid #3b4252;
+                   border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+  input[type=range] { width: 100%; }
+  #legend { font-size: 12px; color: #9aa4b2; background: #1c2129;
+            padding: 10px 12px; border-radius: 6px; border: 1px solid #2a313c; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+        margin-right: 4px; vertical-align: -1px; }
+  #err { color: #bf616a; padding: 20px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>amdrome viz</h1>
+  <span id="ticker">loading episode…</span>
+</header>
+<main>
+  <canvas id="floor" width="768" height="576"></canvas>
+  <div id="side">
+    <div id="controls">
+      <button id="play">▶ play</button>
+      <input id="scrub" type="range" min="0" max="0" value="0">
+      <div>tick <b id="tick">0</b> / <span id="tickmax">0</span></div>
+      <label>speed
+        <select id="speed">
+          <option value="1">1×</option>
+          <option value="4" selected>4×</option>
+          <option value="16">16×</option>
+          <option value="64">64×</option>
+        </select>
+      </label>
+    </div>
+    <div id="legend">
+      <div><span class="sw" style="background:#a3be8c"></span>running</div>
+      <div><span class="sw" style="background:#d08770"></span>PM / moving</div>
+      <div><span class="sw" style="background:#bf616a"></span>broken (andon)</div>
+      <div><span class="sw" style="background:#4c566a"></span>idle / buffer</div>
+      <div>dots = jobs (gold = defect flag)</div>
+    </div>
+  </div>
+</main>
+<div id="err"></div>
+
+<script>
+"use strict";
+let GRID_W = 16, GRID_H = 12, CELL = 48;   // overridden by dump's "grid"
+const cv = document.getElementById("floor"), ctx = cv.getContext("2d");
+
+const SPRITES = {  // kind -> sprite file (station sprites from the pack)
+  inbuf: "conveyor", buffer: "conveyor",
+  cut: "station_cnc", form: "station_arm", weld: "station_arm",
+  paint: "station_arm", inspect: "station_qa", pack: "conveyor",
+};
+const TINT = { idle: [0.30, 0.34, 0.42], proc: [0.64, 0.75, 0.55],
+               pm: [0.82, 0.53, 0.44], moving: [0.56, 0.74, 0.86],
+               broken: [0.75, 0.38, 0.42], blocked: [0.60, 0.60, 0.40] };
+
+const imgs = {};
+let frames = [], cur = 0, playing = false, speed = 4, acc = 0, last = 0;
+
+function loadImages(cb) {
+  const names = [...new Set(Object.values(SPRITES)), "andon"];
+  let left = names.length;
+  names.forEach(n => {
+    const im = new Image();
+    im.onload = () => { if (--left === 0) cb(); };
+    im.src = "sprites/" + n + ".png";
+    imgs[n] = im;
+  });
+}
+
+function fetchEpisode() {
+  fetch("episode.jsonl").then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status + " on episode.jsonl");
+    return r.text();
+  }).then(txt => {
+    frames = txt.trim().split("\n").map(JSON.parse);
+    if (frames[0] && frames[0].grid) {
+      [GRID_W, GRID_H] = frames[0].grid;
+      CELL = Math.floor(Math.min(960 / GRID_W, 640 / GRID_H));
+      cv.width = GRID_W * CELL;
+      cv.height = GRID_H * CELL;
+    }
+    document.getElementById("scrub").max = frames.length - 1;
+    document.getElementById("tickmax").textContent = frames.length - 1;
+    cur = 0; render(); setPlaying(true);
+  }).catch(e => {
+    const el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = "failed to load episode: " + e.message;
+  });
+}
+
+function drawEntity(e) {
+  const px = e.x * CELL, py = e.y * CELL;
+  ctx.fillStyle = "#171b21";
+  ctx.fillRect(px + 2, py + 2, CELL - 4, CELL - 4);
+  const spr = imgs[SPRITES[e.kind] || "conveyor"];
+  const tint = TINT[e.state] || [0.35, 0.40, 0.48];
+  if (spr && spr.complete) {
+    if (e.state === "idle") ctx.globalAlpha = 0.45;
+    ctx.drawImage(spr, px + 6, py + 6, CELL - 12, CELL - 12);
+    ctx.globalAlpha = 1;
+    // state tint overlay
+    ctx.fillStyle = `rgba(${tint[0] * 255 | 0},${tint[1] * 255 | 0},${tint[2] * 255 | 0},0.35)`;
+    ctx.fillRect(px + 6, py + 6, CELL - 12, CELL - 12);
+  }
+  // andon badge on broken
+  if (e.state === "broken" && imgs.andon.complete) {
+    ctx.drawImage(imgs.andon, px + CELL - 26, py + 2, 22, 22);
+  }
+  // buffer fill bar / queue pips
+  if (e.kind === "inbuf" || e.kind === "buffer") {
+    const fill = Math.min(1, (e.queue || 0) / 4);
+    ctx.fillStyle = "#2e3440";
+    ctx.fillRect(px + 8, py + CELL - 12, CELL - 16, 6);
+    ctx.fillStyle = "#88c0d0";
+    ctx.fillRect(px + 8, py + CELL - 12, (CELL - 16) * fill, 6);
+  }
+  // wear gauge (stations)
+  if (e.wear !== undefined) {
+    ctx.fillStyle = "#2e3440";
+    ctx.fillRect(px + 8, py + 6, CELL - 16, 4);
+    ctx.fillStyle = e.wear > 0.5 ? "#bf616a" : "#ebcb8b";
+    ctx.fillRect(px + 8, py + 6, (CELL - 16) * e.wear, 4);
+  }
+}
+
+function render() {
+  const f = frames[cur];
+  if (!f) return;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  // grid lines
+  ctx.strokeStyle = "#1f242c";
+  for (let i = 0; i <= GRID_W; i++) { ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, cv.height); ctx.stroke(); }
+  for (let j = 0; j <= GRID_H; j++) { ctx.beginPath(); ctx.moveTo(0, j * CELL); ctx.lineTo(cv.width, j * CELL); ctx.stroke(); }
+  f.entities.forEach(drawEntity);
+  // jobs as dots
+  f.jobs.forEach(j => {
+    const cx = j.x * CELL + CELL / 2, cy = j.y * CELL - 8;
+    ctx.beginPath();
+    ctx.arc(cx, cy < 8 ? 10 : cy, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = j.defect ? "#e5c07b" : "#81a1c1";
+    ctx.fill();
+  });
+  const k = f.kpi;
+  document.getElementById("tick").textContent = f.t;
+  document.getElementById("scrub").value = cur;
+  document.getElementById("ticker").innerHTML =
+    `net <b>$${k.net.toLocaleString()}</b> · WIP <b>${k.wip}</b> · ` +
+    `clean <b>${k.clean}</b> · escapes <b>${k.defective}</b> · ` +
+    `brkd <b>${k.breakdowns}</b> · downtime <b>${k.downtime}</b> · ` +
+    `PM <b>${k.pm}</b> · spot <b>$${f.spot}</b>`;
+}
+
+function setPlaying(p) {
+  playing = p;
+  document.getElementById("play").textContent = p ? "⏸ pause" : "▶ play";
+  if (p) { last = performance.now(); requestAnimationFrame(loop); }
+}
+function loop(now) {
+  if (!playing) return;
+  acc += (now - last) * speed / 1000;   // ticks per second = speed
+  last = now;
+  while (acc >= 1) {
+    acc -= 1;
+    if (cur < frames.length - 1) cur++; else { setPlaying(false); return; }
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById("play").onclick = () => setPlaying(!playing);
+document.getElementById("scrub").oninput = ev => { cur = +ev.target.value; render(); };
+document.getElementById("speed").onchange = ev => { speed = +ev.target.value; };
+loadImages(fetchEpisode);
+</script>
+</body>
+</html>
