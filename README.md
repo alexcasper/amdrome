@@ -2,7 +2,9 @@
 
 **Intelligent Industry Factory Simulation Engine & Autonomous Agent Benchmark**
 
-`amdrome` is a discrete-event manufacturing simulation engine designed as both an open benchmark for reinforcement learning in the lineage of Kaggle simulation environments (`kaggriculture`), and the core asset for an **Intelligent Industry** hackathon demonstration.
+`amdrome` is a discrete-event manufacturing simulation: an open benchmark for
+reinforcement learning in the lineage of Kaggle simulation environments
+(`kaggriculture`), and the core of our Intelligent Industry hackathon demo.
 
 ---
 
@@ -11,7 +13,7 @@
 1. **The Simulation Engine (`amdrome_sim`)**
    * Pure Python + NumPy discrete-event simulation core based on system dynamics (Sterman, *Business Dynamics*).
    * Dual interface: `kaggle_environments` compatible episode runner (JSON observation/action protocol) and Gymnasium / PettingZoo vector environments for RL.
-   * Built from the ground up with an **anti-tape design guarantee**: hierarchical Bayesian hyperpriors and partial observability prevent trajectory memorization while preserving seed-level determinism.
+   * **Anti-tape by design**: hierarchical Bayesian hyperpriors and partial observability prevent trajectory memorization while preserving seed-level determinism.
 
 2. **The Sample Agent Ecosystem (`agents/` & `rl/`)**
    * Readable scripted baselines: Blind Run-to-Failure, Lean Kanban Pull, and Adaptive Reactive Heuristics.
@@ -127,9 +129,9 @@ generators).
 - **RL training harness** (amdrome-x4i, in progress): knob-search +
   Stable-Baselines3 MaskablePPO fleet runs against the Gym core.
 - **RL-tuned sample agent** (amdrome-u2e): readable baseline, tuned by RL.
-- **Engine fixes from A/B verification**: understaffing currently *speeds*
-  stations up (inverted staffing multiplier, amdrome-svf); full inspection is
-  free, dominating the escape metric (amdrome-hpm).
+- **Engine fixes from A/B verification**: understaffing no longer *speeds*
+  stations up (staffing multiplier fixed, amdrome-svf, golden v8); full
+  inspection is still free, dominating the escape metric (amdrome-hpm, open).
 - **Multi-factory shared-market self-play**: bidding opponents drawn from a
   policy pool; league/match runner with the acceptance gates (anti-tape +
   skill-dominance tests) from DESIGN.md §Acceptance.
@@ -147,17 +149,19 @@ generators).
 
 Detailed architecture, mathematical models, API contracts, and roadmap specifications:
 
-* 📄 **[Master Comprehensive Plan](file:///mnt/d/ops/amdrome/docs/COMPREHENSIVE_PLAN.md):** Overall system blueprint, strategic lessons from kaggriculture, acceptance gates, and delivery plan.
-* 📐 **[Simulation Mechanics Specification](file:///mnt/d/ops/amdrome/docs/SPEC_MECHANICS.md):** Mathematical models of world topology, stock-flow queues, wear degradation, defect cascades, labour fatigue, market bidding, and two-tier RNG inventory.
-* 🔌 **[API & Environment Specification](file:///mnt/d/ops/amdrome/docs/SPEC_API_ENV.md):** `kaggle_environments` JSON schema, Gymnasium `FactoryGymEnv` interface, PettingZoo multi-agent interface, and headless runner CLI (`bin/run_match.py`).
-* 🖥️ **[Demo Product Specification](file:///mnt/d/ops/amdrome/docs/SPEC_DEMO_PRODUCT.md):** Operator Assistant analytical architecture, terminal UI layout, paired A/B benchmark methodology, and 3-minute pitch script.
-* 🗺️ **[Roadmap & Beads Breakdown](file:///mnt/d/ops/amdrome/docs/ROADMAP_AND_BEADS.md):** Phased project roadmap, Beads task hierarchy, and fleet infrastructure execution protocol.
-* 📜 **[Project Charter](file:///mnt/d/ops/amdrome/CHARTER.md):** Ratified charter, hackathon brief, and anti-tape design goals.
-* 🛠️ **[Design v0 Workbench](file:///mnt/d/ops/amdrome/DESIGN.md):** Working design document and initial layout prototype findings.
+* 📄 **[Master Comprehensive Plan](docs/COMPREHENSIVE_PLAN.md):** Overall system blueprint, strategic lessons from kaggriculture, acceptance gates, and delivery plan.
+* 📐 **[Simulation Mechanics Specification](docs/SPEC_MECHANICS.md):** Mathematical models of world topology, stock-flow queues, wear degradation, defect cascades, labour fatigue, market bidding, and two-tier RNG inventory.
+* 🔌 **[API & Environment Specification](docs/SPEC_API_ENV.md):** `kaggle_environments` JSON schema, Gymnasium `FactoryGymEnv` interface, PettingZoo multi-agent interface, and headless runner CLI (`bin/run_match.py`).
+* 🖥️ **[Demo Product Specification](docs/SPEC_DEMO_PRODUCT.md):** Operator Assistant analytical architecture, terminal UI layout, paired A/B benchmark methodology, and 3-minute pitch script.
+* 🗺️ **[Roadmap & Beads Breakdown](docs/ROADMAP_AND_BEADS.md):** Phased project roadmap, Beads task hierarchy, and execution protocol.
+* 📜 **[Project Charter](CHARTER.md):** Ratified charter, hackathon brief, and anti-tape design goals.
+* 🛠️ **[Design v0 Workbench](DESIGN.md):** Working design document and initial layout prototype findings.
 
 ---
 
-## Fleet Execution Protocol (Hard Constraint)
+## How it's built
 
-* **Dawn (Local Host):** Orchestration, code editing, git versioning, beads management, fast test execution (<10s). Dawn does **no heavy simulation or sweep runs**.
-* **Fleet Hosts (`dusk`, `albion`, `midknight`):** Headless episode execution, parameter sweeps, and RL training dispatched via stateless CLI runners over SSH.
+Developed by a fleet of AI agents (GLM / Claude / Gemini panes) under a
+coordinator, with every benchmark number produced by scripted, reproducible
+runs — the repo's `research/` directory holds the verification artifacts.
+

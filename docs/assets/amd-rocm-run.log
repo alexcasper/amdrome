@@ -1,0 +1,50 @@
+# amd-rocm-run.log — BLOCKED, NO RUN (2026-10-18T09:37Z)
+
+STOOD DOWN 2026-10-18 (Bedivere/alex): albion is intentionally OFF; the AMD-evidence
+task moved to env_aup on the AUP cloud. This file is retained as the blocker record only.
+
+STATUS: **Task blocked — albion (the R9700 host) is unreachable. Nothing ran.
+No training numbers exist. This file documents the blocker, not a run.**
+
+## What was prepared (dawn side, done in ~15 min)
+- RL entry confirmed: `rl/train_sb3.py` (SB3 MaskablePPO over FactoryGymEnv,
+  bead amdrome-x4i). CLI: `python3 rl/train_sb3.py --steps 100000 --run-name ppo_v1`
+  Deps to install on the training host: `uv pip install gymnasium sb3-contrib torch numpy`
+  (+ amdrome_sim import path handled by the script itself).
+- Repo present at dawn:/mnt/d/ops/amdrome, ready to rsync (exclude .git, data, viz)
+  if the albion GitHub key can't reach github.com/alexcasper/amdrome.
+
+## Exact blocker
+albion (Radeon AI PRO R9700, gfx1201) is OFF the tailnet:
+
+    $ tailscale status | grep albion
+    100.108.63.37  albion  tagged-devices  linux  active; relay "lhr";
+                   offline, last seen 4d ago; tx 5460 rx 0
+
+    $ tailscale ping -c 2 albion  → timed out / no reply
+    $ ssh -o ConnectTimeout=10-20 albion            → Connection timed out
+    $ ssh albion.saiga-beaufort.ts.net              → Connection timed out
+
+- No LAN fallback either: dawn changed networks today (netcheck: "gateway and
+  self IP changed: gw=192.168.49.1 self=192.168.49.98"); a full /24 port-22
+  sweep of 192.168.49.0/24 from dawn found only the gateway (.1) and dawn (.98).
+  albion is not on dawn's current LAN.
+- The rest of the tailnet is also dark right now (dusk — reachable 25 min ago
+  for an unrelated deploy — now times out; j1/t3/t4 last seen 1d+, all peers
+  rx=0), consistent with the fleet site being offline/unreachable from dawn's
+  current location, and albion specifically being down for 4 days.
+
+## What is NOT claimed
+- No torch device string, no rocm-smi capture, no steps/s or updates/s number.
+- Nothing was run on CPU and called GPU; there was no run at all.
+
+## To unblock (any one of)
+1. Power albion back on / restore its network (tailscale auto-rejoins), then
+   rerun: rsync repo → farm ROCm venv → `--steps 122880` (=60 updates) →
+   capture `torch.cuda.get_device_name(0)` + `rocm-smi` during updates.
+2. Point this task at any other reachable ROCm host with a GPU and the farm
+   recipe; the harness itself is GPU-agnostic (SB3 torch device="cuda").
+
+(Prepared by the express-task agent; see conversation transcript for the full
+search trail: ssh config, cmdb ~/cmdb/amd/nixos-hq/hosts/albion/* confirms the
+R9700 + TheRock ROCm 10.1 gfx1201 stack lives on albion.)
