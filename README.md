@@ -2,9 +2,27 @@
 
 **Intelligent Industry Factory Simulation Engine & Autonomous Agent Benchmark**
 
-`amdrome` is a discrete-event manufacturing simulation: an open benchmark for
-reinforcement learning in the lineage of Kaggle simulation environments
+`amdrome` is a discrete-event manufacturing simulation: a hands-on tool for
+**teaching kanban concepts and reinforcement learning together** — WIP limits,
+pull signals, inspection and maintenance scheduling on one side; a
+Gymnasium-compatible RL environment with scripted baselines on the other. It
+is an open benchmark in the lineage of Kaggle simulation environments
 (`kaggriculture`), and the core of our Intelligent Industry hackathon demo.
+
+## Screenshots
+
+The live visualizer (also at <https://alexcasper.github.io/amdrome/>) — the
+kanban card stream, station floor with andon alerts, and the KPI HUD:
+
+![End of episode: six breakdowns tripped red andon panels across the line](docs/assets/screenshots/viz-late-episode.png)
+
+*End of a blind run-to-failure episode — six breakdowns tripped their red
+andon panels; net −$7.6k. The condition-based-PM assistant prevents exactly
+this (−73.6% unplanned downtime on held-out seeds).*
+
+![Mid-episode: clean production run](docs/assets/screenshots/viz-mid-episode.png)
+
+*Mid-episode production: stations, buffers and the spot-market/contract HUD.*
 
 ---
 
@@ -164,4 +182,17 @@ Detailed architecture, mathematical models, API contracts, and roadmap specifica
 Developed by a fleet of AI agents (GLM / Claude / Gemini panes) under a
 coordinator, with every benchmark number produced by scripted, reproducible
 runs — the repo's `research/` directory holds the verification artifacts.
+
+## Acknowledgements
+
+- **AMD AUP academic programme** — RL testing for this project was performed
+  on an **AMD Radeon AI PRO R9700** (gfx1201) via ROCm, provisioned through
+  the AUP cloud. PyTorch 2.9.1 + ROCm 7.13 (HIP) executed the
+  Stable-Baselines3 MaskablePPO training pipeline unmodified.
+- The simulation engine itself is pure Python and CPU-only — the benchmark
+  runs anywhere; the RL pipeline is what runs on AMD.
+
+---
+
+*Built for the [AMD Developer Hackathon: ACT III](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-iii).*
 
