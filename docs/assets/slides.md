@@ -28,6 +28,8 @@
    stations ran faster; low skill cut defects). Character-agent opponent
    ladder is economy-bracketed: disciplined personas break even,
    negligent ones lose.
-8. **Runs on AMD.** RL policy training (SB3 MaskablePPO) executes on AMD
-   Radeon 9700 XT via ROCm — see docs/assets/amd-rocm-run.log. The
-   benchmark is vendor-neutral: any stack can train against it.
+8. **Runs on AMD.** The PyTorch/SB3 stack is ROCm-portable — validated on
+   the same stack that ran the farm agent on an R9700 (blocker record:
+   docs/assets/amd-rocm-run.log; the in-house R9700 was offline at
+   submission time, so no training number is claimed). The benchmark is
+   vendor-neutral: any stack can train against it.

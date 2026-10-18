@@ -112,21 +112,27 @@ batch compute went to fleet hosts and an HPC cluster rather than the desktop.
 
 - The engine and benchmarks are CPU-only, pure-Python and stdlib — any
   stack, any vendor, runs the benchmark.
-- **Runs on AMD: RL policy training (Stable-Baselines3 MaskablePPO)
-  executes on AMD Radeon 9700 XT via ROCm** — see
-  `docs/assets/amd-rocm-run.log` for the measured run. (If that log has
-  not landed by submission time, the honest fallback line is: "The
-  PyTorch/SB3 stack is ROCm-portable; validated on the same stack that
-  ran the farm agent on an R9700." Do NOT quote a number without the
-  log.)
+- **Runs on AMD: the PyTorch/SB3 stack is ROCm-portable; validated on the
+  same stack that ran the farm agent on an R9700.** (The planned
+  MaskablePPO run on the in-house Radeon AI PRO R9700 was blocked — the
+  host was offline at submission time; the blocker record is
+  `docs/assets/amd-rocm-run.log`. No training number is claimed that we
+  do not have.)
 - Earlier training runs used NVIDIA A100s on a university cluster; the
   benchmark itself is vendor-neutral.
 
 ## Cover image
 
-`docs/assets/cover.png` (generated from the project's own sprite pack:
-the production line, andon alert, wear gauges, and the measured headline
-numbers)
+`docs/assets/screenshots/viz-late-episode.png` — end-of-episode frame
+from the live visualizer: the production line with six breakdowns marked
+by red andon panels, wear gauges pegged, and the KPI ticker showing the
+blind baseline bleeding net −$7.6k. The mechanics, visualized.
+
+## Supporting screenshots
+
+- `docs/assets/screenshots/viz-mid-episode.png` — clean early episode:
+  line running, gauges low, KPIs healthy.
+- (generated alternative: `docs/assets/cover.png`, a sprite-pack render)
 
 ## Slides
 
@@ -143,17 +149,13 @@ recording.
 
 ## Demo URL
 
-http://dawn.saiga-beaufort.ts.net:9122 — live episode visualizer (HTML5
+https://alexcasper.github.io/amdrome/ — live episode visualizer (HTML5
 Canvas; scrubber, playback, per-tick KPI ticker; loads a dumped episode
-from JSON, never inlined).
+from JSON, never inlined). Public GitHub Pages off the `gh-pages` branch.
 
 ## Repo URL
 
-https://github.com/alexcasper/amdrome
-
-> NOTE FOR SUBMITTER (alex): the repo is currently PRIVATE — lablab
-> requires a public GitHub repo. Flip visibility (or grant lablab access)
-> before clicking submit.
+https://github.com/alexcasper/amdrome (public)
 
 ## Technology tags
 
