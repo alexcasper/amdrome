@@ -225,10 +225,11 @@ runs — the repo's `research/` directory holds the verification artifacts.
 
 ## Acknowledgements
 
-- **AMD AUP academic programme** — RL testing for this project was performed
-  on an **AMD Radeon AI PRO R9700** (gfx1201) via ROCm, provisioned through
-  the AUP cloud. PyTorch 2.9.1 + ROCm 7.13 (HIP) executed the
-  Stable-Baselines3 MaskablePPO training pipeline unmodified.
+- **AMD AUP academic programme** — RL training and testing for this project
+  ran on an **AMD Radeon AI PRO R9700** (gfx1201) via ROCm, provisioned
+  through the AUP cloud: Stable-Baselines3 MaskablePPO trained 20,480 steps
+  (90 gradient updates, ~423 steps/s) on PyTorch 2.9.1 + ROCm 7.13 (HIP),
+  unmodified — see `docs/assets/aup_gpu_evidence.log`.
 - The simulation engine itself is pure Python and CPU-only — the benchmark
   runs anywhere; the RL pipeline is what runs on AMD.
 
