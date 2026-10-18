@@ -26,6 +26,54 @@ this (−73.6% unplanned downtime on held-out seeds).*
 
 ---
 
+## How to play
+
+You are the plant manager of a small factory. One episode is one production
+week (336 ticks). Your goal: deliver ordered jobs on time, with good quality,
+and end the week with more money than you started.
+
+**The loop.** Contracts arrive offering to pay for batches of products.
+You bid against rival factories for the ones worth taking. Winning a contract
+means buying raw inputs, pushing batches through the line
+(cut → form → weld → paint → inspect → pack), and delivering before the
+deadline. Miss the deadline or ship defects and you pay penalties.
+
+**What you decide each week:**
+
+- **Bidding** — which contracts to chase, and how aggressively to price.
+  Big jobs pay well but crowd out smaller ones.
+- **Buying** — raw inputs come from a jumpy spot market or slower lead-time
+  orders. Buy ahead and tie up cash, or buy late and risk the line starving.
+- **Layout** — stations sit on a grid. Moving a station takes it offline
+  (travel distance costs); re-pointing a line to a station that's already
+  there is free. Shorter routes mean faster jobs.
+- **People** — assign workers with the right skills, cross-train them,
+  manage fatigue and absences. Technicians are shared: time spent on
+  preventive maintenance is time not spent fixing a broken station.
+- **Quality** — inspection is a dial (skip / sample / full). Catch defects
+  before the customer, or pay PPM penalties and contract risk.
+- **Monitoring** — you never see machine wear directly. You buy information:
+  a limited budget of SPC samples per shift, alarms you configure yourself
+  (with false positives). What you choose to watch is what you can react to.
+
+**The trap to learn.** Machines wear invisibly until they break. Run to
+failure and you lose the line at the worst moment; over-maintain and the
+technician is never free. The winning habit — watch cycle times drift,
+service before the cliff — is exactly the kanban/SPM discipline the
+simulation teaches.
+
+**Try it:**
+
+```bash
+python3 bin/run_episode.py --seed 4242 --dump episode.jsonl   # run a week
+python3 -m http.server 9122 --directory viz                   # watch it
+python3 bin/run_match.py --agents agents/blind.py agents/char_pete.py --seed 4242
+```
+
+Or open the live demo: <https://alexcasper.github.io/amdrome/>
+
+---
+
 ## Deliverables & Architecture
 
 1. **The Simulation Engine (`amdrome_sim`)**
@@ -43,18 +91,10 @@ this (−73.6% unplanned downtime on held-out seeds).*
    * Statistical CUSUM drift detection and Weibull Remaining Useful Life (RUL) estimation.
    * Interactive Rich terminal operator console with real-time floor topology, andon boards, and prescriptive recommendations.
    * Automated paired A/B evaluation suite (`demo/benchmark/`), independently
-     verified on held-out seeds. **Economy REBALANCED 2026-10-17** (contract
-     prices 560–740, rival pool 0.80–0.98, breakdown cost 1400 — all prior
-     dollar figures superseded; see research/2026-10-17-rebalance.md).
-     Default assistant (condition-based PM `cbm_threshold=0.50`,
-     `full_inspection=True`; research/2026-10-17-ab-verification.md):
-     **unplanned** downtime −73.6% (95% CI 72–75%, 2000 held-out eps on the
-     current engine after the amdrome-svf labour fixes), total downtime incl.
-     planned PM +1.6%, net +$6.6k/episode vs blind. Defect escapes −92–94%, but this
-     depends on 100% inspection being free in the engine (amdrome-hpm).
-     (At `cbm_threshold=0.40`: −88% unplanned, +24% total downtime.)
-     Legacy assistant (`--legacy`): −20% unplanned. The character roster brackets the
-     economy: disciplined personas ~break even, negligent ones −3–4k.
+     verified on held-out seeds: the default Operator Assistant cuts
+     **unplanned downtime −73.6%** vs run-to-failure (2000 held-out episodes;
+     details in `research/2026-10-17-ab-verification.md` and
+     `demo/benchmark_report.md`).
 
 ---
 
