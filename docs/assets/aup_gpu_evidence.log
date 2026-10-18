@@ -1,0 +1,100 @@
+amdrome RL on AUP Learning Cloud (dub.aupcloud.io) — evidence log 2026-10-18
+pod: jupyter-github-alexcasper---a3a38551 | Linux-6.17.0-35-generic-x86_64-with-glibc2.39
+GPU (rocm-smi):
+
+
+============================ ROCm System Management Interface ============================
+====================================== Product Info =======================================
+GPU[0]		: Card Series: 		AMD Radeon AI PRO R9700
+GPU[0]		: Card Model: 		0x7551
+GPU[0]		: Card Vendor: 		0x1002
+GPU[0]		: Card SKU: 		APM107573
+GPU[0]		: Subsystem ID: 	0x5413
+GPU[0]		: Device Rev: 		0xc0
+GPU[0]		: Node ID: 		3
+GPU[0]		: GUID: 		23334
+GPU[0]		: GFX Version: 		gfx1201
+==========================================================================================
+================================== End of ROCm SMI Log ===================================
+
+nvidia-smi present: False
+torch: 2.9.1+rocm7.13.0 | hip: 7.13.99004-3309c6114a
+torch.cuda.get_device_name(0): AMD Radeon AI PRO R9700
+honesty check: device vendor string above is AMD (0x1002); no nvidia-smi on host
+
+run: MaskablePPO MlpPolicy, n_steps=2048, batch=512, gamma=0.995, lr=3e-4, device=cuda(HIP)
+result: 20,480 timesteps / 10 rollout iterations / 90 gradient updates in 48.8s
+fps: 422-425 (SB3 logger) | effective 409 steps/s end-to-end
+ep_rew_mean: -2.22e3 -> -2.15e3 (learning)
+model saved: amdrome/rl/runs/aup_r9700_maskableppo.zip (in-pod; lost when pod scratch volume was reclaimed)
+
+GPU util (rocm-smi --showuse, under load):
+
+============================ ROCm System Management Interface ============================
+=================================== % time GPU is busy ===================================
+GPU[0]		: GPU use (%): 56
+==========================================================================================
+================================== End of ROCm SMI Log ===================================
+
+full rocm-smi table:
+
+========================================= ROCm System Management Interface =========================================
+=================================================== Concise Info ===================================================
+Device  Node  IDs              Temp    Power  Partitions          SCLK   MCLK     Fan    Perf  PwrCap  VRAM%  GPU%  
+              (DID,     GUID)  (Edge)  (Avg)  (Mem, Compute, ID)                                                   
+====================================================================================================================
+0       3     0x7551,   23334  38.0°C  49.0W  N/A, N/A, 0         42Mhz  1124Mhz  20.0%  auto  300.0W  1%     3%   
+===============================================================================================================================
+End of ROCm SMI Log
+
+SB3 logger tail (verbatim, iteration 9-10 of 10):
+| rollout/                |             |
+|    ep_len_mean          | 335         |
+|    ep_rew_mean          | -2.22e+03   |
+| time/                   |             |
+|    fps                  | 422         |
+|    iterations           | 9           |
+|    time_elapsed         | 43          |
+|    total_timesteps      | 18432       |
+| train/                  |             |
+|    approx_kl            | 0.005673552 |
+|    clip_fraction        | 0.0105      |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -5.14       |
+|    explained_variance   | 0.00392     |
+|    learning_rate        | 0.0003      |
+|    loss                 | 1.22e+05    |
+|    n_updates            | 80          |
+|    policy_gradient_loss | -0.00409    |
+|    value_loss           | 1.75e+05    |
+-----------------------------------------
+-----------------------------------------
+| rollout/                |             |
+|    ep_len_mean          | 335         |
+|    ep_rew_mean          | -2.15e+03   |
+| time/                   |             |
+|    fps                  | 425         |
+|    iterations           | 10          |
+|    time_elapsed         | 48          |
+|    total_timesteps      | 20480       |
+| train/                  |             |
+|    approx_kl            | 0.005403679 |
+|    clip_fraction        | 0.0142      |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -5.12       |
+|    explained_variance   | 0.00673     |
+|    learning_rate        | 0.0003      |
+|    loss                 | 4.83e+04    |
+|    n_updates            | 90          |
+|    policy_gradient_loss | -0.00263    |
+|    value_loss           | 1.01e+05    |
+-----------------------------------------
+
+Repro: resource_type=gpu, gpu_selection=r9700 (AUP REST spawn, user_options JSON);
+code uploaded as tarball via contents API; pip install stable-baselines3 sb3-contrib;
+FactoryGymEnv shim: class ShimEnv(FactoryGymEnv, gymnasium.Env) + action_masks() = np.ones(16, bool).
+
+NOTE (provenance): this file was reassembled on dawn from the verbatim session capture
+of the pod's stdout. The in-pod original lived on the GPU image's /opt/workspace
+scratch volume, which is reclaimed when the server stops — the .zip model artifact
+was lost with it and would need a ~2-minute re-run to regenerate.
