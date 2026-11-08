@@ -75,3 +75,5 @@ sync.remote: "git+https://github.com/alexcasper/amdrome"
 export:
     auto: true
     git-add: true
+validation:
+    on-create: warn
